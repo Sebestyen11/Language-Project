@@ -2,21 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Language Tree with Lines</title>
+  <title>Zoomable Language Tree</title>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f4f4f4; text-align: center; }
+    body { font-family: Arial; background: #f4f4f4; overflow: hidden; margin: 0; padding: 20px; }
     h1 { text-align: center; }
 
     /* Tree container */
+    #tree-container {
+      width: 100%;
+      height: 90vh;
+      overflow: hidden;
+      cursor: grab;
+      position: relative;
+    }
+
+    #tree {
+      display: flex;
+      justify-content: center;
+      transform-origin: 0 0;
+      transition: transform 0.1s;
+    }
+
     .tree ul {
-      padding-top: 20px; position: relative;
-      display: inline-block; text-align: center; 
+      list-style-type: none;
+      padding-left: 20px;
+      text-align: center;
+      position: relative;
     }
 
     .tree li {
-      display: inline-block; vertical-align: top;
-      text-align: center; position: relative;
+      display: inline-block;
+      vertical-align: top;
+      text-align: center;
       padding: 20px 5px 0 5px;
+      position: relative;
     }
 
     /* Connectors */
@@ -32,21 +51,18 @@
       border-top: 0;
     }
     .tree li:only-child::before, .tree li:only-child::after { display: none; }
-
     .tree ul::before {
       content: '';
       position: absolute; top: 0; left: 50%;
-      border-left: 2px solid #ccc; height: 20px; 
+      border-left: 2px solid #ccc; height: 20px;
     }
 
     /* Node style */
     .node { padding: 5px 10px; border: 1px solid #ccc; border-radius: 5px; background: #fff; display: inline-block; }
     .node:hover { background: #e6f7ff; border-color: #1e90ff; cursor: pointer; }
-
-    /* Children hidden by default */
     .children { display: none; }
 
-    /* Popup styles */
+    /* Popup */
     .popup {
       position: fixed; top:50%; left:50%;
       transform: translate(-50%, -50%);
@@ -61,32 +77,35 @@
   </style>
 </head>
 <body>
-  <h1>World Language Tree</h1>
+  <h1>Zoomable World Language Tree</h1>
 
-  <div class="tree">
-    <ul>
-      <li>
-        <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
-        <ul class="children">
-          <li>
-            <div class="node" data-info="Germanic: English, German, Dutch, Scandinavian.">Germanic</div>
-            <ul class="children">
-              <li><div class="node" data-info="English: ~380 million speakers.">English</div></li>
-              <li><div class="node" data-info="German: Spoken in Germany, Austria, Switzerland.">German</div></li>
-              <li><div class="node" data-info="Swedish: Spoken in Sweden and parts of Finland.">Swedish</div></li>
-            </ul>
-          </li>
-          <li>
-            <div class="node" data-info="Romance: Derived from Latin.">Romance</div>
-            <ul class="children">
-              <li><div class="node" data-info="Spanish: ~460 million speakers.">Spanish</div></li>
-              <li><div class="node" data-info="French: Spoken in France, Canada, Africa.">French</div></li>
-              <li><div class="node" data-info="Italian: Spoken in Italy.">Italian</div></li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-    </ul>
+  <div id="tree-container">
+    <div id="tree" class="tree">
+      <ul>
+        <!-- Indo-European -->
+        <li>
+          <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
+          <ul class="children">
+            <li>
+              <div class="node" data-info="Germanic: English, German, Dutch, Scandinavian.">Germanic</div>
+              <ul class="children">
+                <li><div class="node" data-info="English: ~380 million speakers.">English</div></li>
+                <li><div class="node" data-info="German: Spoken in Germany, Austria, Switzerland.">German</div></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Uralic -->
+        <li>
+          <div class="node" data-info="Uralic: Includes Finnish, Hungarian, Estonian.">Uralic</div>
+          <ul class="children">
+            <li><div class="node" data-info="Finnish: Spoken in Finland.">Finnish</div></li>
+            <li><div class="node" data-info="Hungarian: Spoken in Hungary.">Hungarian</div></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <!-- Popup & Overlay -->
@@ -98,6 +117,7 @@
   </div>
 
   <script>
+    // Collapsible nodes & popup
     const nodes = document.querySelectorAll('.node');
     const popup = document.getElementById('popup');
     const overlay = document.querySelector('.overlay');
@@ -105,12 +125,8 @@
     nodes.forEach(node => {
       node.addEventListener('click', (e) => {
         e.stopPropagation();
-
-        // Toggle children visibility
         const children = node.parentElement.querySelector('.children');
         if(children) children.style.display = children.style.display === 'none' ? 'block' : 'none';
-
-        // Show popup
         document.getElementById('popupTitle').textContent = node.textContent;
         document.getElementById('popupInfo').textContent = node.getAttribute('data-info');
         popup.style.display = 'block';
@@ -118,17 +134,42 @@
       });
     });
 
-    // Close popup
     document.getElementById('closePopup').addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
     overlay.addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
 
-    // Welcome popup
     window.addEventListener('load', () => {
-      document.getElementById('popupTitle').textContent = "Welcome to the World Language Tree!";
-      document.getElementById('popupInfo').textContent = "Click on any node to see information. Collapse or expand branches to explore!";
+      document.getElementById('popupTitle').textContent = "Welcome!";
+      document.getElementById('popupInfo').textContent = "Explore the language tree. Click nodes to see info. Zoom in/out using mouse wheel, drag to pan.";
       popup.style.display = 'block';
       overlay.style.display = 'block';
     });
+
+    // Zoom & pan
+    const tree = document.getElementById('tree');
+    const container = document.getElementById('tree-container');
+    let scale = 1;
+    let isDragging = false, startX, startY, originX = 0, originY = 0;
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      scale = Math.min(Math.max(0.2, scale + delta), 3);
+      tree.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true; startX = e.clientX - originX; startY = e.clientY - originY; container.style.cursor='grabbing';
+    });
+
+    container.addEventListener('mousemove', (e) => {
+      if(!isDragging) return;
+      originX = e.clientX - startX;
+      originY = e.clientY - startY;
+      tree.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+    });
+
+    container.addEventListener('mouseup', () => { isDragging=false; container.style.cursor='grab'; });
+    container.addEventListener('mouseleave', () => { isDragging=false; container.style.cursor='grab'; });
   </script>
 </body>
 </html>
