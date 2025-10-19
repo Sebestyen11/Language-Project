@@ -78,7 +78,6 @@ overlay.addEventListener('click', hidePopup);
 
 // ---------- Zoom (desktop) ----------
 svg.addEventListener('wheel', e=>{
-  if(popup.style.display==='block') return;
   e.preventDefault();
   const rect = svg.getBoundingClientRect();
   const cx = e.clientX - rect.left;
@@ -92,7 +91,7 @@ svg.addEventListener('wheel', e=>{
 },{passive:false});
 
 // ---------- Drag ----------
-svg.addEventListener('mousedown', e=>{ if(popup.style.display==='block') return; dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor='grabbing'; });
+svg.addEventListener('mousedown', e=>{ dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor='grabbing'; });
 window.addEventListener('mousemove', e=>{ if(!dragging) return; panX=e.clientX-startX; panY=e.clientY-startY; applyTransform(); });
 window.addEventListener('mouseup', ()=>{ dragging=false; svg.style.cursor='grab'; });
 
@@ -140,14 +139,15 @@ function buildTree(data){
     rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
     rect.setAttribute('rx',8); rect.setAttribute('ry',8);
     // Color based on type
-    if(n.type==="group") rect.setAttribute('fill','#ffffff'); // groups white
-    else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.1)'); // lighter green
+    if(n.type==="group") rect.setAttribute('fill','#ffffff');
+    else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.1)');
     else rect.setAttribute('fill','var(--box)');
     rect.setAttribute('stroke','var(--accent)');
     const text=document.createElementNS('http://www.w3.org/2000/svg','text');
     text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
     g.appendChild(rect); g.appendChild(text);
-    g.addEventListener('click', e=>{ e.stopPropagation(); showPopup(n.name,n.info||'No information available.') });
+    // Node click disabled (no popups)
+    g.addEventListener('click', e=>{ e.stopPropagation(); });
     group.appendChild(g);
   });
   const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs); const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth;
@@ -161,7 +161,8 @@ async function loadAndRender(){
     if(!resp.ok) throw new Error('HTTP '+resp.status); 
     const data=await resp.json(); 
     buildTree(data); 
-    showPopup('Welcome to the Language Tree','This site shows language families top→down. Click a box to view details. Drag to pan, scroll to zoom.'); 
+    // Intro popup only
+    showPopup('Welcome to the Language Tree','This site shows language families top→down. Drag to pan, scroll to zoom. Only the tree is interactive; no popups for individual languages or groups.');
   }catch(err){ 
     console.error('Failed to load languages.json',err); 
     showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.'); 
