@@ -5,31 +5,31 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Language Tree — Top→Down</title>
 <style>
-  :root{
-    --bg1:#f3f7fa;
-    --bg2:#e0ebf5;
-    --box:#ffffff;
-    --accent:#5b9bd5;
-    --accent-dark:#0078d4;
-    --muted:#a0bcd0;
-  }
-  html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Arial,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-font-smoothing:antialiased;}
-  #tree-container{width:100vw;height:100vh;touch-action:none;cursor:grab;overflow:hidden}
-  svg{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
-  #tree-group{transition: transform 0.08s linear;}
-  .node rect{fill:var(--box);stroke:var(--accent);stroke-width:2;rx:8;ry:8;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.12));user-select:none;}
-  .node:hover rect{fill:#f0fbff; stroke:var(--accent-dark); transform:scale(1.02);}
-  .node text{font-size:13px;pointer-events:none;fill:#111;font-weight:600;user-select:none;}
-  .link{stroke:var(--muted);stroke-width:2; fill:none}
-  .popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:420px;z-index:1002;display:none}
-  .popup h2{margin:0 0 8px 0;color:var(--accent-dark);font-size:18px}
-  .popup p{margin:0;color:#333}
-  .popup .close{position:absolute;right:12px;top:8px;font-size:20px;color:var(--accent-dark);cursor:pointer}
-  .overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:1001;display:none}
-  #searchContainer{position:fixed;top:12px;left:12px;z-index:2000;}
-  #searchBox{padding:6px 10px;border-radius:6px;border:1px solid #ccc;font-size:14px;width:180px;}
-  #searchDropdown{background:#fff;border:1px solid #ccc;border-radius:6px;margin-top:2px;max-height:200px;overflow-y:auto;display:none;}
-  @media (max-width:480px){ .node text{font-size:12px} }
+:root{
+  --bg1:#f3f7fa;
+  --bg2:#e0ebf5;
+  --box:#ffffff;
+  --accent:#5b9bd5;
+  --accent-dark:#0078d4;
+  --muted:#a0bcd0;
+}
+html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Arial,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-font-smoothing:antialiased;}
+#tree-container{width:100vw;height:100vh;touch-action:none;cursor:grab;overflow:hidden}
+svg{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
+#tree-group{transition: transform 0.08s linear;}
+.node rect{stroke:var(--accent);stroke-width:2;rx:8;ry:8;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.12));user-select:none;}
+.node:hover rect{stroke:var(--accent-dark); transform:scale(1.02);}
+.node text{font-size:13px;pointer-events:none;fill:#111;font-weight:600;user-select:none;}
+.link{stroke:var(--muted);stroke-width:2; fill:none}
+.popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:420px;z-index:1002;display:none}
+.popup h2{margin:0 0 8px 0;color:var(--accent-dark);font-size:18px}
+.popup p{margin:0;color:#333}
+.popup .close{position:absolute;right:12px;top:8px;font-size:20px;color:var(--accent-dark);cursor:pointer}
+.overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:1001;display:none}
+#searchContainer{position:fixed;top:12px;left:12px;z-index:2000;}
+#searchBox{padding:6px 10px;border-radius:6px;border:1px solid #ccc;font-size:14px;width:180px;}
+#searchDropdown{background:#fff;border:1px solid #ccc;border-radius:6px;margin-top:2px;max-height:200px;overflow-y:auto;display:none;}
+@media (max-width:480px){ .node text{font-size:12px} }
 </style>
 </head>
 <body>
@@ -135,8 +135,17 @@ function buildTree(data){
   nodes.forEach(n=>{ if(n.children) n.children.forEach(c=>group.appendChild(drawConnector(n._x,n._y,c._x,c._y))); });
   nodes.forEach(n=>{
     const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n._x},${n._y})`);
-    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2); rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
-    const text=document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2);
+    rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
+    rect.setAttribute('rx',8); rect.setAttribute('ry',8);
+    // Color based on type
+    if(n.type==="group") rect.setAttribute('fill','rgba(255,0,0,0.2)');
+    else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.2)');
+    else rect.setAttribute('fill','var(--box)');
+    rect.setAttribute('stroke','var(--accent)');
+    const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
     g.appendChild(rect); g.appendChild(text);
     g.addEventListener('click', e=>{ e.stopPropagation(); showPopup(n.name,n.info||'No information available.') });
     group.appendChild(g);
