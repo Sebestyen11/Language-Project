@@ -2,39 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>World Language Tree</title>
+  <title>Centered Language Tree</title>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; text-align: center; }
     h1 { text-align: center; }
 
-    .tree ul { list-style-type: none; padding-left: 20px; }
-    .tree li { margin: 5px 0; cursor: pointer; }
+    /* Tree styles */
+    .tree ul { list-style-type: none; padding-left: 0; display: inline-block; text-align: left; }
+    .tree li { margin: 10px auto; text-align: center; }
     .node { padding: 5px 10px; border: 1px solid #ccc; border-radius: 5px; background: #fff; display: inline-block; }
-    .node:hover { background: #e6f7ff; border-color: #1e90ff; }
-    .children { display: none; margin-left: 20px; }
+    .node:hover { background: #e6f7ff; border-color: #1e90ff; cursor: pointer; }
+    .children { display: none; margin-top: 10px; }
 
-    /* Popup style */
+    /* Popup styles */
     .popup {
       position: fixed; top:50%; left:50%;
-      transform: translate(-50%,-50%);
-      background:#fff;
-      border:2px solid #1e90ff;
-      border-radius:10px;
-      padding:20px;
-      display:none;
-      z-index:1000;
-      max-width:80%;
+      transform: translate(-50%, -50%);
+      background:#fff; border:2px solid #1e90ff;
+      border-radius:10px; padding:20px;
+      display:none; z-index:1000; max-width:80%;
       box-shadow:0 5px 15px rgba(0,0,0,0.3);
     }
     .popup h2 { margin-top:0; }
     .popup .close { cursor:pointer; float:right; font-weight:bold; font-size:20px; color:#1e90ff; }
-
-    .overlay {
-      position:fixed; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.3);
-      display:none;
-      z-index:900;
-    }
+    .overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:none; z-index:900; }
   </style>
 </head>
 <body>
@@ -42,14 +33,14 @@
 
   <div class="tree">
     <ul>
-      <!-- Indo-European -->
+      <!-- Indo-European centered -->
       <li>
         <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
         <ul class="children">
           <li>
             <div class="node" data-info="Germanic: English, German, Dutch, Scandinavian.">Germanic</div>
             <ul class="children">
-              <li><div class="node" data-info="English: ~380 million native speakers.">English</div></li>
+              <li><div class="node" data-info="English: ~380 million speakers.">English</div></li>
               <li><div class="node" data-info="German: Spoken in Germany, Austria, Switzerland.">German</div></li>
               <li><div class="node" data-info="Swedish: Spoken in Sweden and parts of Finland.">Swedish</div></li>
             </ul>
@@ -60,13 +51,6 @@
               <li><div class="node" data-info="Spanish: ~460 million speakers.">Spanish</div></li>
               <li><div class="node" data-info="French: Spoken in France, Canada, Africa.">French</div></li>
               <li><div class="node" data-info="Italian: Spoken in Italy.">Italian</div></li>
-            </ul>
-          </li>
-          <li>
-            <div class="node" data-info="Slavic: Russian, Polish, Czech, etc.">Slavic</div>
-            <ul class="children">
-              <li><div class="node" data-info="Russian: Spoken in Russia and nearby countries.">Russian</div></li>
-              <li><div class="node" data-info="Polish: Spoken in Poland.">Polish</div></li>
             </ul>
           </li>
         </ul>
@@ -81,24 +65,6 @@
         </ul>
       </li>
 
-      <!-- Afro-Asiatic -->
-      <li>
-        <div class="node" data-info="Afro-Asiatic: Languages in North Africa and Middle East.">Afro-Asiatic</div>
-        <ul class="children">
-          <li><div class="node" data-info="Arabic: Widely spoken in Middle East and North Africa.">Arabic</div></li>
-          <li><div class="node" data-info="Hebrew: Spoken in Israel.">Hebrew</div></li>
-        </ul>
-      </li>
-
-      <!-- Uralic -->
-      <li>
-        <div class="node" data-info="Uralic: Includes Finnish, Hungarian, Estonian.">Uralic</div>
-        <ul class="children">
-          <li><div class="node" data-info="Finnish: Spoken in Finland.">Finnish</div></li>
-          <li><div class="node" data-info="Hungarian: Spoken in Hungary.">Hungarian</div></li>
-        </ul>
-      </li>
-
       <!-- Niger-Congo -->
       <li>
         <div class="node" data-info="Niger-Congo: Large African language family.">Niger-Congo</div>
@@ -110,7 +76,7 @@
     </ul>
   </div>
 
-  <!-- Overlay & Popup -->
+  <!-- Popup & Overlay -->
   <div class="overlay"></div>
   <div class="popup" id="popup">
     <span class="close" id="closePopup">&times;</span>
@@ -127,7 +93,7 @@
       node.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        // Toggle children
+        // Toggle children visibility
         const children = node.parentElement.querySelector('.children');
         if(children) children.style.display = children.style.display === 'none' ? 'block' : 'none';
 
@@ -143,10 +109,10 @@
     document.getElementById('closePopup').addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
     overlay.addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
 
-    // Welcome popup
+    // Welcome popup on page load
     window.addEventListener('load', () => {
       document.getElementById('popupTitle').textContent = "Welcome to the World Language Tree!";
-      document.getElementById('popupInfo').textContent = "Explore language families, branches, and languages. Click nodes to see information. You can collapse or expand branches to explore!";
+      document.getElementById('popupInfo').textContent = "Click on any node to see information about that language or family. Collapse or expand branches to explore!";
       popup.style.display = 'block';
       overlay.style.display = 'block';
     });
