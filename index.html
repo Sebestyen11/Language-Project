@@ -162,7 +162,7 @@ async function loadAndRender(){
     const data=await resp.json(); 
     buildTree(data); 
     // Intro popup only
-    showPopup('Welcome to the Language Tree','This site shows language families top→down. Drag to pan, scroll to zoom. Only the tree is interactive; no popups for individual languages or groups.');
+    showPopup('Welcome to the Tree of Languages','This site shows a diagram of languages and their genetics. You can also see what languages derived from the same ancestor. White represents a linguistic group and green represents a living language.                           Created by Sebastian G. F. Archibald');
   }catch(err){ 
     console.error('Failed to load languages.json',err); 
     showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.'); 
