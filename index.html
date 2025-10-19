@@ -7,23 +7,20 @@
 <style>
 body {
   margin:0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(135deg, #f3f7fa, #e0ebf5);
-  overflow: hidden;
-  user-select: none;
+  font-family:"Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg,#f3f7fa,#e0ebf5);
+  overflow:hidden;
+  user-select:none;
 }
 
 #tree-container {
-  width: 100vw;
-  height: 100vh;
-  touch-action: none;
-  cursor: grab;
+  width:100vw;
+  height:100vh;
+  touch-action:none;
+  cursor:grab;
 }
 
-svg {
-  width: 100%;
-  height: 100%;
-}
+svg { width:100%; height:100%; }
 
 .node rect {
   fill:#fff;
@@ -31,15 +28,11 @@ svg {
   stroke-width:2;
   rx:8;
   ry:8;
-  filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
   transition:0.2s;
 }
 
-.node:hover rect {
-  fill:#e6f3ff;
-  stroke:#0078d4;
-  transform:scale(1.05);
-}
+.node:hover rect { fill:#e6f3ff; stroke:#0078d4; transform:scale(1.05); }
 
 .node text {
   font-size:14px;
@@ -55,10 +48,9 @@ path.link {
 }
 
 .popup {
-  position: fixed;
-  top:50%;
-  left:50%;
-  transform: translate(-50%,-50%);
+  position:fixed;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
   background:#fff;
   border-radius:12px;
   padding:20px 25px;
@@ -69,8 +61,8 @@ path.link {
   text-align:center;
 }
 
-.popup h2 {margin-top:0;color:#0078d4;}
-.popup p {color:#444;}
+.popup h2 { margin-top:0; color:#0078d4; }
+.popup p { color:#444; }
 .popup .close {
   position:absolute; top:8px; right:12px;
   font-size:22px;
@@ -80,15 +72,14 @@ path.link {
 }
 
 .overlay {
-  position: fixed;
-  top:0; left:0;
+  position:fixed; top:0; left:0;
   width:100%; height:100%;
   background: rgba(0,0,0,0.4);
   display:none;
   z-index:1000;
 }
 
-.intro {display:block;}
+.intro { display:block; }
 </style>
 </head>
 <body>
@@ -108,50 +99,42 @@ path.link {
 <div class="popup intro" id="introPopup">
   <span class="close" id="closeIntro">&times;</span>
   <h2>Welcome to the World Language Tree</h2>
-  <p>This is an interactive exploration of major language families. Drag, zoom, and click a language or branch to learn more.</p>
+  <p>Drag, zoom, and click a language or branch to learn more.</p>
 </div>
 
 <script>
-const data = [
-  {name:"Indo-European", info:"A major language family that includes most of the languages of Europe and South Asia.",
-   children:[
-     {name:"Germanic", info:"Branch including English, German, Dutch, and Scandinavian languages.",
-      children:[
-        {name:"English", info:"Spoken by ~380 million native speakers."},
-        {name:"German", info:"Spoken mainly in Germany, Austria, and Switzerland."}
-      ]
-     },
-     {name:"Romance", info:"Languages derived from Latin.",
-      children:[
-        {name:"Spanish", info:"Spoken by over 460 million people."},
-        {name:"French", info:"Spoken in France, Canada, and parts of Africa."}
-      ]
-     }
-   ]
-  },
-  {name:"Uralic", info:"Language family including Finnish, Estonian, and Hungarian.",
-   children:[
-     {name:"Finnish", info:"Spoken in Finland."},
-     {name:"Hungarian", info:"Spoken in Hungary."},
-     {name:"Estonian", info:"Spoken in Estonia."}
-   ]
-  }
+const data=[
+  {name:"Indo-European", info:"A major language family that includes most of Europe and South Asia.", children:[
+    {name:"Germanic", info:"Branch including English, German, Dutch, Scandinavian.", children:[
+      {name:"English", info:"~380 million speakers."},
+      {name:"German", info:"Spoken in Germany, Austria, Switzerland."}
+    ]},
+    {name:"Romance", info:"Derived from Latin.", children:[
+      {name:"Spanish", info:"~460 million speakers."},
+      {name:"French", info:"Spoken in France, Canada, Africa."}
+    ]}
+  ]},
+  {name:"Uralic", info:"Includes Finnish, Estonian, Hungarian.", children:[
+    {name:"Finnish", info:"Spoken in Finland."},
+    {name:"Hungarian", info:"Spoken in Hungary."},
+    {name:"Estonian", info:"Spoken in Estonia."}
+  ]}
 ];
 
-const svg = document.getElementById("tree-svg");
-const group = document.getElementById("tree-group");
-const width = svg.clientWidth;
-const height = svg.clientHeight;
-const dx = 250, dy = 150, topOffset=700;
+const svg=document.getElementById("tree-svg");
+const group=document.getElementById("tree-group");
+const width=svg.clientWidth;
+const height=svg.clientHeight;
+const dx=250, dy=150, topOffset=700;
 
-// ------------------ LAYOUT ------------------
+// ---------- Layout ----------
 function layout(data){
   let nodes=[], links=[];
-  function traverse(node, x, y){
+  function traverse(node,x,y){
     node.x=x; node.y=y; nodes.push(node);
     if(node.children){
       const n=node.children.length;
-      const start = x - dx*(n-1)/2;
+      const start=x-dx*(n-1)/2;
       node.children.forEach((child,i)=>{
         const cx=start + i*dx;
         const cy=y+dy;
@@ -162,16 +145,15 @@ function layout(data){
   }
   data.forEach((root,i)=>{
     const offset=(i-(data.length-1)/2)*topOffset;
-    traverse(root, width/2 + offset,50);
+    traverse(root,width/2+offset,50);
   });
   return {nodes, links};
 }
 
-// ------------------ DRAW ------------------
+// ---------- Draw ----------
 function draw(){
   group.innerHTML="";
   const {nodes, links}=layout(data);
-
   links.forEach(l=>{
     const midY=(l.y1+l.y2)/2;
     const path=document.createElementNS("http://www.w3.org/2000/svg","path");
@@ -200,38 +182,42 @@ function draw(){
 
     g.addEventListener("click", e=>{
       e.stopPropagation();
-      document.getElementById("popupTitle").textContent=g.dataset.name;
-      document.getElementById("popupInfo").textContent=g.dataset.info;
-      document.getElementById("popup").style.display="block";
-      document.getElementById("overlay").style.display="block";
+      popupTitle.textContent=g.dataset.name;
+      popupInfo.textContent=g.dataset.info;
+      popup.style.display="block";
+      overlay.style.display="block";
+      dragging=false; // pause dragging while popup open
     });
   });
 }
 draw();
 
-// ------------------ POPUPS ------------------
+// ---------- Popups ----------
 const popup=document.getElementById("popup");
+const popupTitle=document.getElementById("popupTitle");
+const popupInfo=document.getElementById("popupInfo");
 const overlay=document.getElementById("overlay");
-document.getElementById("closePopup").onclick=()=>{popup.style.display="none"; overlay.style.display="none";}
-overlay.onclick=()=>{popup.style.display="none"; overlay.style.display="none";}
 const intro=document.getElementById("introPopup");
-document.getElementById("closeIntro").onclick=()=>{intro.style.display="none";}
 
-// ------------------ PAN & ZOOM ------------------
+document.getElementById("closePopup").onclick=()=>{popup.style.display="none"; overlay.style.display="none";}
+document.getElementById("closeIntro").onclick=()=>{intro.style.display="none";}
+overlay.addEventListener("click", ()=>{popup.style.display="none"; overlay.style.display="none";});
+
+// ---------- Drag & Smooth Zoom ----------
 let scale=1, targetScale=1, panX=0, panY=0;
 let dragging=false, startX, startY;
 let lastTouchDist=null;
 
-// Smooth transform
 function updateTransform(){
   scale += (targetScale - scale)*0.2;
-  group.setAttribute("transform", `translate(${panX},${panY}) scale(${scale})`);
+  group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`);
   requestAnimationFrame(updateTransform);
 }
 requestAnimationFrame(updateTransform);
 
 // Mouse zoom
 svg.addEventListener("wheel", e=>{
+  if(popup.style.display==="block") return; // disable zoom if popup open
   e.preventDefault();
   const factor=e.deltaY<0?1.1:0.9;
   targetScale*=factor;
@@ -240,31 +226,33 @@ svg.addEventListener("wheel", e=>{
 
 // Mouse drag
 svg.addEventListener("mousedown", e=>{
-  dragging=true; startX=e.clientX - panX; startY=e.clientY - panY; svg.style.cursor="grabbing";
+  if(popup.style.display==="block") return;
+  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
 });
 window.addEventListener("mousemove", e=>{if(dragging){panX=e.clientX-startX; panY=e.clientY-startY;}});
 window.addEventListener("mouseup", ()=>{dragging=false; svg.style.cursor="grab";});
 
 // Touch support
 svg.addEventListener("touchstart", e=>{
+  if(popup.style.display==="block") return;
   if(e.touches.length===1){
-    dragging=true; startX=e.touches[0].clientX - panX; startY=e.touches[0].clientY - panY;
+    dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY;
   }else if(e.touches.length===2){
     lastTouchDist=Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
     );
   }
 });
 svg.addEventListener("touchmove", e=>{
+  if(popup.style.display==="block") return;
   e.preventDefault();
   if(e.touches.length===1 && dragging){
-    panX=e.touches[0].clientX - startX;
-    panY=e.touches[0].clientY - startY;
+    panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY;
   }else if(e.touches.length===2){
     const dist=Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
     );
     if(lastTouchDist){
       const factor=dist/lastTouchDist;
