@@ -1,183 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>World Language Tree</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Language Tree — Top→Down</title>
 <style>
-body {
-  margin:0;
-  font-family:"Segoe UI", Arial, sans-serif;
-  background: linear-gradient(135deg,#f3f7fa,#e0ebf5);
-  overflow:hidden;
-  user-select:none;
-}
-#tree-container { width:100vw; height:100vh; touch-action:none; cursor:grab; }
-svg { width:100%; height:100%; }
-#tree-group { transition: transform 0.05s linear; }
-.node rect {
-  fill:#fff; stroke:#5b9bd5; stroke-width:2; rx:8; ry:8;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-}
-.node:hover rect { fill:#e6f3ff; stroke:#0078d4; transform:scale(1.05); }
-.node text { font-size:14px; font-weight:500; fill:#333; pointer-events:none; }
-path.link { stroke:#a0bcd0; stroke-width:2; fill:none; }
-.popup {
-  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-  background:#fff; border-radius:12px; padding:20px 25px;
-  box-shadow:0 6px 20px rgba(0,0,0,0.25); display:none;
-  z-index:1001; max-width:400px; text-align:center;
-}
-.popup h2 { margin-top:0; color:#0078d4; }
-.popup p { color:#444; }
-.popup .close {
-  position:absolute; top:8px; right:12px;
-  font-size:22px; font-weight:bold; color:#0078d4; cursor:pointer;
-}
-.overlay {
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background: rgba(0,0,0,0.4); display:none; z-index:1000;
-}
+  :root{
+    --bg1:#f3f7fa;
+    --bg2:#e0ebf5;
+    --box:#ffffff;
+    --accent:#5b9bd5;
+    --accent-dark:#0078d4;
+    --muted:#a0bcd0;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Arial,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-font-smoothing:antialiased;}
+  #tree-container{width:100vw;height:100vh;touch-action:none;cursor:grab;overflow:hidden}
+  svg{width:100%;height:100%;display:block}
+  #tree-group{transition: transform 0.08s linear;}
+  .node rect{fill:var(--box);stroke:var(--accent);stroke-width:2;rx:8;ry:8;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.12));}
+  .node:hover rect{fill:#f0fbff; stroke:var(--accent-dark); transform:scale(1.02);}
+  .node text{font-size:13px;pointer-events:none;fill:#111;font-weight:600}
+  .link{stroke:var(--muted);stroke-width:2; fill:none}
+  .popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:420px;z-index:1002;display:none}
+  .popup h2{margin:0 0 8px 0;color:var(--accent-dark);font-size:18px}
+  .popup p{margin:0;color:#333}
+  .popup .close{position:absolute;right:12px;top:8px;font-size:20px;color:var(--accent-dark);cursor:pointer}
+  .overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:1001;display:none}
+  /* small screens: slightly smaller boxes/text */
+  @media (max-width:480px){
+    .node text{font-size:12px}
+  }
 </style>
 </head>
 <body>
 
 <div id="tree-container">
-  <svg id="tree-svg"><g id="tree-group"></g></svg>
+  <svg id="tree-svg" xmlns="http://www.w3.org/2000/svg">
+    <g id="tree-group"></g>
+  </svg>
 </div>
 
 <div class="overlay" id="overlay"></div>
 
 <div class="popup" id="popup">
   <span class="close" id="closePopup">&times;</span>
-  <h2 id="popupTitle"></h2>
-  <p id="popupInfo"></p>
+  <h2 id="popupTitle">Title</h2>
+  <p id="popupInfo">Info</p>
 </div>
 
 <script>
-const overlay=document.getElementById("overlay");
-const popup=document.getElementById("popup");
-const popupTitle=document.getElementById("popupTitle");
-const popupInfo=document.getElementById("popupInfo");
-const closePopup=document.getElementById("closePopup");
+/* ---------------- Configuration ---------------- */
+const BOX_W = 140;           // node box width
+const BOX_H = 44;            // node box height
+const LEVEL_V_GAP = 120;     // vertical distance between levels
+const LEAF_H_SPACING = 24;   // minimum horizontal spacing between leaves
+const SUBTREE_H_SPACING = 30;// extra spacing between sibling subtrees
 
-function showPopup(title,info){ 
-  popupTitle.textContent=title; 
-  popupInfo.textContent=info; 
-  popup.style.display="block"; 
-  overlay.style.display="block"; 
+/* ---------------- DOM ---------------- */
+const svg = document.getElementById('tree-svg');
+const group = document.getElementById('tree-group');
+const overlay = document.getElementById('overlay');
+const popup = document.getElementById('popup');
+const popupTitle = document.getElementById('popupTitle');
+const popupInfo = document.getElementById('popupInfo');
+const closePopup = document.getElementById('closePopup');
+
+/* ---------------- Popup helpers ---------------- */
+function showPopup(title, info){
+  popupTitle.textContent = title || 'No title';
+  popupInfo.textContent = info || 'No information available.';
+  popup.style.display = 'block';
+  overlay.style.display = 'block';
 }
-function hidePopup(){ popup.style.display="none"; overlay.style.display="none"; }
-closePopup.onclick=hidePopup; overlay.onclick=hidePopup;
-
-const svg=document.getElementById("tree-svg");
-const group=document.getElementById("tree-group");
-let panX=0, panY=0, scale=1;
-let dragging=false, startX, startY;
-
-function updateTransform(){
-  group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`);
+function hidePopup(){
+  popup.style.display = 'none';
+  overlay.style.display = 'none';
 }
+closePopup.addEventListener('click', hidePopup);
+overlay.addEventListener('click', hidePopup);
 
-svg.addEventListener("wheel", e=>{
-  if(popup.style.display==="block") return;
+/* ---------------- Transform (pan/zoom) ---------------- */
+let panX = 0, panY = 0, scale = 1;
+let dragging = false, startX = 0, startY = 0;
+function applyTransform(){ group.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`); }
+
+/* wheel zoom (cursor-centered), solid drag */
+svg.addEventListener('wheel', e=>{
+  if (popup.style.display === 'block') return;
   e.preventDefault();
-  const rect=svg.getBoundingClientRect();
-  const cx=e.clientX-rect.left;
-  const cy=e.clientY-rect.top;
-  const factor=e.deltaY<0?1.05:0.95;
-  panX-=(cx-panX)*(factor-1);
-  panY-=(cy-panY)*(factor-1);
-  scale*=factor;
-  scale=Math.max(0.5,Math.min(scale,3));
-  updateTransform();
+  const rect = svg.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  // smaller smoother steps
+  const factor = e.deltaY < 0 ? 1.05 : 0.95;
+  panX -= (cx - panX) * (factor - 1);
+  panY -= (cy - panY) * (factor - 1);
+  scale *= factor;
+  scale = Math.max(0.4, Math.min(scale, 6));
+  applyTransform();
+}, { passive:false });
+
+svg.addEventListener('mousedown', e=>{
+  if (popup.style.display === 'block') return;
+  dragging = true;
+  startX = e.clientX - panX;
+  startY = e.clientY - panY;
+  svg.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e=>{
+  if (!dragging) return;
+  panX = e.clientX - startX;
+  panY = e.clientY - startY;
+  applyTransform();
+});
+window.addEventListener('mouseup', ()=>{
+  dragging = false;
+  svg.style.cursor = 'grab';
 });
 
-svg.addEventListener("mousedown", e=>{
-  if(popup.style.display==="block") return;
-  dragging=true;
-  startX=e.clientX-panX;
-  startY=e.clientY-panY;
-  svg.style.cursor="grabbing";
+/* touch: pan + pinch (midpoint-centered) */
+let lastTouchDist = null;
+let lastTouchMid = null;
+svg.addEventListener('touchstart', e=>{
+  if (popup.style.display === 'block') return;
+  if (e.touches.length === 1){
+    dragging = true;
+    startX = e.touches[0].clientX - panX;
+    startY = e.touches[0].clientY - panY;
+  } else if (e.touches.length === 2){
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    lastTouchMid = {
+      x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+    };
+  }
 });
-window.addEventListener("mousemove", e=>{
-  if(dragging){ panX=e.clientX-startX; panY=e.clientY-startY; updateTransform(); }
-});
-window.addEventListener("mouseup", ()=>{
-  dragging=false; svg.style.cursor="grab";
+svg.addEventListener('touchmove', e=>{
+  if (popup.style.display === 'block') return;
+  e.preventDefault();
+  if (e.touches.length === 1 && dragging){
+    panX = e.touches[0].clientX - startX;
+    panY = e.touches[0].clientY - startY;
+    applyTransform();
+  } else if (e.touches.length === 2 && lastTouchDist){
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const factor = dist / lastTouchDist;
+    // zoom toward midpoint
+    panX -= (lastTouchMid.x - panX) * (factor - 1);
+    panY -= (lastTouchMid.y - panY) * (factor - 1);
+    scale *= factor;
+    scale = Math.max(0.4, Math.min(scale, 6));
+    applyTransform();
+    lastTouchDist = dist;
+  }
+}, { passive:false });
+svg.addEventListener('touchend', e=>{
+  if (e.touches.length < 2) lastTouchDist = null;
+  if (e.touches.length === 0) dragging = false;
 });
 
-async function loadTree(){
-  try{
-    const res=await fetch("./languages.json");  // IMPORTANT: use ./ to ensure same folder
-    const data=await res.json();
-    buildTree(data);
-    showPopup("Welcome to the Language Tree",
-      "This tree shows global language families. Click a group to learn more. Drag to move, scroll to zoom.");
-  }catch(err){
-    console.error(err);
-    showPopup("Error","Couldn't load languages.json. Make sure it’s in the same folder as index.html!");
+/* ---------------- Layout algorithm (top-down neat) ----------------
+   We compute each node's subtree width (based on leaf count), then
+   assign X positions so siblings don't overlap and children are centered
+   under their parent.
+--------------------------------------------------------------- */
+
+/* compute leaves count for subtree */
+function computeLeafCounts(node){
+  if (!node.children || node.children.length === 0){
+    node._leafCount = 1;
+    return 1;
+  }
+  let sum = 0;
+  node.children.forEach(child => { sum += computeLeafCounts(child); });
+  node._leafCount = sum;
+  return sum;
+}
+
+/* assign positions recursively: x = cumulative offset + half subtree width */
+function assignPositions(node, depth, xOffsetRef){
+  const levelY = 40 + depth * LEVEL_V_GAP;
+  if (!node.children || node.children.length === 0){
+    const x = xOffsetRef.value + (BOX_W/2);
+    node._x = x;
+    node._y = levelY;
+    xOffsetRef.value += BOX_W + LEAF_H_SPACING;
+  } else {
+    // position children first
+    node.children.forEach(child => assignPositions(child, depth + 1, xOffsetRef));
+    // center this node above its children
+    const firstChild = node.children[0];
+    const lastChild = node.children[node.children.length - 1];
+    node._x = (firstChild._x + lastChild._x) / 2;
+    node._y = levelY;
   }
 }
 
+/* generate straight T-shaped connectors from parent to child */
+function drawConnector(parentX, parentY, childX, childY){
+  // parent bottom
+  const parentBottomY = parentY + BOX_H/2;
+  const childTopY = childY - BOX_H/2;
+  const midY = (parentBottomY + childTopY) / 2;
+  // path: down from parentBottomY, horizontal to childX, down to childTopY
+  const d = `M ${parentX} ${parentBottomY} L ${parentX} ${midY} L ${childX} ${midY} L ${childX} ${childTopY}`;
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('class', 'link');
+  return path;
+}
+
+/* build and render tree from JSON data (root array) */
 function buildTree(data){
-  group.innerHTML="";
-  const nodes=[];
-  const links=[];
-  
-  function traverse(node,x,y,depth,parent){
-    nodes.push({...node,x,y,depth});
-    if(parent) links.push({x1:parent.x,y1:parent.y,x2:x,y2:y});
-    if(node.children){
-      const step=200;
-      node.children.forEach((child,i)=>{
-        const childY=y+100;
-        const offset=(i-(node.children.length-1)/2)*step;
-        traverse(child,x+offset,childY,depth+1,node);
-      });
-    }
+  // compute leaf counts and positions
+  data.forEach(root => computeLeafCounts(root));
+  // compute positions: traverse roots left-to-right with an xOffset
+  const xOffsetRef = { value: 40 }; // left margin
+  data.forEach(root => {
+    assignPositions(root, 0, xOffsetRef);
+  });
+
+  // clear existing
+  group.innerHTML = '';
+
+  // collect nodes and links
+  const nodes = [];
+  function collect(node){
+    nodes.push(node);
+    if (node.children) node.children.forEach(child => collect(child));
   }
+  data.forEach(root => collect(root));
 
-  data.forEach((root,i)=>{
-    traverse(root, (i*400)-200, 50, 0, null);
-  });
-
-  links.forEach(l=>{
-    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-    const mx=(l.x1+l.x2)/2;
-    path.setAttribute("d",`M${l.x1},${l.y1} C${mx},${l.y1} ${mx},${l.y2} ${l.x2},${l.y2}`);
-    path.setAttribute("class","link");
-    group.appendChild(path);
-  });
-
-  nodes.forEach(n=>{
-    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-    g.setAttribute("class","node");
-    g.setAttribute("transform",`translate(${n.x},${n.y})`);
-    g.addEventListener("click",e=>{
-      e.stopPropagation();
-      showPopup(n.name,n.info||"No information available.");
+  // draw connectors (parent→child)
+  nodes.forEach(node => {
+    if (!node.children) return;
+    node.children.forEach(child => {
+      const parentX = node._x;
+      const parentY = node._y;
+      const childX = child._x;
+      const childY = child._y;
+      group.appendChild(drawConnector(parentX, parentY, childX, childY));
     });
-    const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
-    rect.setAttribute("x",-70);
-    rect.setAttribute("y",-25);
-    rect.setAttribute("width",140);
-    rect.setAttribute("height",50);
-    const text=document.createElementNS("http://www.w3.org/2000/svg","text");
-    text.setAttribute("text-anchor","middle");
-    text.setAttribute("dy","5");
-    text.textContent=n.name;
+  });
+
+  // draw node boxes (on top of connectors)
+  nodes.forEach(node => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','node');
+    g.setAttribute('transform', `translate(${node._x},${node._y})`);
+    // rect centered on x,y
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x', -BOX_W/2);
+    rect.setAttribute('y', -BOX_H/2);
+    rect.setAttribute('width', BOX_W);
+    rect.setAttribute('height', BOX_H);
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('dy','6'); // vertical centering tweak
+    text.textContent = node.name;
     g.appendChild(rect);
     g.appendChild(text);
+    // click opens popup
+    g.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      showPopup(node.name, node.info || 'No information available.');
+    });
     group.appendChild(g);
   });
 
-  panX=window.innerWidth/2;
-  panY=100;
-  updateTransform();
+  // center initial view: set pan so tree roughly centered horizontally
+  // compute bounding box of nodes:
+  const xs = nodes.map(n => n._x);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const treeWidth = maxX - minX + BOX_W;
+  const svgW = window.innerWidth;
+  // center: panX so that group origin (0,0) placed in view center while considering group translation uses same coords:
+  panX = (svgW - treeWidth) / 2 - minX + BOX_W/2;
+  panY = 20; // small top margin
+  scale = 1;
+  applyTransform();
 }
 
-loadTree();
+/* ---------------- Load JSON and initialize ---------------- */
+async function loadAndRender(){
+  try{
+    const resp = await fetch('./languages.json');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    buildTree(data);
+    // show intro popup once
+    showPopup('Welcome to the Language Tree', 'This site shows language families top→down. Click a box to view details. Drag to pan, scroll to zoom.');
+  }catch(err){
+    console.error('Failed to load languages.json', err);
+    showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.');
+  }
+}
+
+/* load on start and re-render on window resize (keeps spacing neat) */
+loadAndRender();
+window.addEventListener('resize', ()=>{ loadAndRender(); });
+
+/* close popup if background clicked (handled by overlay listener) and close on ESC */
+window.addEventListener('keydown', e=>{ if (e.key === 'Escape') hidePopup(); });
+
 </script>
 </body>
 </html>
