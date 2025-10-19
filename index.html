@@ -137,7 +137,7 @@ function showPopup(title,info){ popupTitle.textContent=title; popupInfo.textCont
 function hidePopup(){ popup.style.display="none"; overlay.style.display="none";}
 closePopup.onclick=hidePopup; overlay.onclick=hidePopup;
 
-// ---------------- Drag & Smooth Centered Zoom ----------------
+// ---------------- Drag & Cursor-Centered Zoom ----------------
 let panX=0, panY=0, scale=1, targetScale=1;
 let dragging=false, startX, startY;
 
@@ -148,11 +148,16 @@ function updateTransform(){
 }
 requestAnimationFrame(updateTransform);
 
-// Zoom centered on tree center
+// Zoom centered on cursor/finger
 svg.addEventListener("wheel", e=>{
   if(popup.style.display==="block") return;
   e.preventDefault();
+  const rect=svg.getBoundingClientRect();
+  const cx=e.clientX-rect.left;
+  const cy=e.clientY-rect.top;
   const factor=e.deltaY<0?1.1:0.9;
+  panX -= (cx-panX)*(factor-1);
+  panY -= (cy-panY)*(factor-1);
   targetScale*=factor;
   targetScale=Math.max(0.5, Math.min(targetScale,3));
 });
@@ -166,11 +171,15 @@ window.addEventListener("mousemove", e=>{if(dragging){panX=e.clientX-startX; pan
 window.addEventListener("mouseup", ()=>{dragging=false; svg.style.cursor="grab";});
 
 // Touch pan and pinch zoom
-let lastTouchDist=null;
+let lastTouchDist=null, lastTouchMidX=0, lastTouchMidY=0;
 svg.addEventListener("touchstart", e=>{
   if(popup.style.display==="block") return;
   if(e.touches.length===1){ dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY; }
-  else if(e.touches.length===2){ lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
+  else if(e.touches.length===2){
+    lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    lastTouchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2 - panX;
+    lastTouchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2 - panY;
+  }
 });
 svg.addEventListener("touchmove", e=>{
   if(popup.style.display==="block") return;
@@ -178,7 +187,13 @@ svg.addEventListener("touchmove", e=>{
   if(e.touches.length===1 && dragging){ panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY; }
   else if(e.touches.length===2){
     const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    if(lastTouchDist){ targetScale*=(dist/lastTouchDist); targetScale=Math.max(0.5, Math.min(targetScale,3)); }
+    if(lastTouchDist){
+      const factor=dist/lastTouchDist;
+      panX -= (lastTouchMidX)*(factor-1);
+      panY -= (lastTouchMidY)*(factor-1);
+      targetScale*=factor;
+      targetScale=Math.max(0.5, Math.min(targetScale,3));
+    }
     lastTouchDist=dist;
   }
 });
