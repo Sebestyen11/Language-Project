@@ -77,8 +77,6 @@ path.link {
   display:none;
   z-index:1000;
 }
-
-.intro { display:block; }
 </style>
 </head>
 <body>
@@ -95,13 +93,8 @@ path.link {
   <p id="popupInfo"></p>
 </div>
 
-<div class="popup intro" id="introPopup">
-  <span class="close" id="closeIntro">&times;</span>
-  <h2>Welcome to the World Language Tree</h2>
-  <p>Drag, zoom, and click a language or branch to learn more.</p>
-</div>
-
 <script>
+// ---------------- Data ----------------
 const data=[
   {name:"Indo-European", info:"A major language family that includes most of Europe and South Asia.", children:[
     {name:"Germanic", info:"Branch including English, German, Dutch, Scandinavian.", children:[
@@ -120,15 +113,20 @@ const data=[
   ]}
 ];
 
+// ---------------- Elements ----------------
 const svg=document.getElementById("tree-svg");
 const group=document.getElementById("tree-group");
-const width=svg.clientWidth;
-const height=svg.clientHeight;
-const dx=250, dy=150, topOffset=700;
+const overlay=document.getElementById("overlay");
+const popup=document.getElementById("popup");
+const popupTitle=document.getElementById("popupTitle");
+const popupInfo=document.getElementById("popupInfo");
+const closePopup=document.getElementById("closePopup");
 
-// ---------- Layout ----------
+// ---------------- Layout ----------------
+const dx=250, dy=150, width=svg.clientWidth, height=svg.clientHeight;
+
 function layout(data){
-  let nodes=[], links=[];
+  const nodes=[], links=[];
   function traverse(node,x,y){
     node.x=x; node.y=y; nodes.push(node);
     if(node.children){
@@ -143,13 +141,13 @@ function layout(data){
     }
   }
   data.forEach((root,i)=>{
-    const offset=(i-(data.length-1)/2)*topOffset;
+    const offset=(i-(data.length-1)/2)*500;
     traverse(root,width/2+offset,50);
   });
   return {nodes, links};
 }
 
-// ---------- Draw ----------
+// ---------------- Draw ----------------
 function draw(){
   group.innerHTML="";
   const {nodes, links}=layout(data);
@@ -181,79 +179,64 @@ function draw(){
 
     g.addEventListener("click", e=>{
       e.stopPropagation();
-      showPopup(g.dataset.name,g.dataset.info);
+      popupTitle.textContent=n.name;
+      popupInfo.textContent=n.info;
+      popup.style.display="block";
+      overlay.style.display="block";
     });
   });
 }
 draw();
 
-// ---------- Popup functions ----------
-const popup=document.getElementById("popup");
-const popupTitle=document.getElementById("popupTitle");
-const popupInfo=document.getElementById("popupInfo");
-const overlay=document.getElementById("overlay");
-const intro=document.getElementById("introPopup");
-
-function showPopup(title,info){
-  popupTitle.textContent=title;
-  popupInfo.textContent=info;
-  popup.style.display="block";
-  overlay.style.display="block";
-}
-
+// ---------------- Popup ----------------
 function hidePopup(){
   popup.style.display="none";
   overlay.style.display="none";
 }
+closePopup.onclick=hidePopup;
+overlay.onclick=hidePopup;
 
-document.getElementById("closePopup").onclick=hidePopup;
-document.getElementById("closeIntro").onclick=()=>{intro.style.display="none";}
-overlay.addEventListener("click", hidePopup);
-
-// ---------- Drag & Smooth Zoom ----------
-let scale=1, targetScale=1, panX=0, panY=0;
+// ---------------- Drag & Zoom ----------------
+let panX=0, panY=0, scale=1, targetScale=1;
 let dragging=false, startX, startY;
 let lastTouchDist=null, lastTouchMidX=0, lastTouchMidY=0;
 
 function updateTransform(){
-  scale += (targetScale - scale)*0.2;
+  scale += (targetScale-scale)*0.2;
   group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`);
   requestAnimationFrame(updateTransform);
 }
 requestAnimationFrame(updateTransform);
 
-// ---------- Mouse zoom (centered on cursor) ----------
+// Mouse zoom
 svg.addEventListener("wheel", e=>{
-  if(popup.style.display==="block") return; // disable zoom if popup open
+  if(popup.style.display==="block") return;
   e.preventDefault();
   const rect=svg.getBoundingClientRect();
-  const cx=e.clientX - rect.left;
-  const cy=e.clientY - rect.top;
+  const cx=e.clientX-rect.left, cy=e.clientY-rect.top;
   const factor=e.deltaY<0?1.1:0.9;
-  panX -= (cx - panX)*(factor-1);
-  panY -= (cy - panY)*(factor-1);
+  panX -= (cx-panX)*(factor-1);
+  panY -= (cy-panY)*(factor-1);
   targetScale*=factor;
-  targetScale=Math.max(0.5, Math.min(targetScale,2));
+  targetScale=Math.max(0.5, Math.min(targetScale,3));
 });
 
-// ---------- Mouse drag ----------
+// Mouse drag
 svg.addEventListener("mousedown", e=>{
   if(popup.style.display==="block") return;
-  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
+  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY;
+  svg.style.cursor="grabbing";
 });
 window.addEventListener("mousemove", e=>{if(dragging) {panX=e.clientX-startX; panY=e.clientY-startY;}});
 window.addEventListener("mouseup", ()=>{dragging=false; svg.style.cursor="grab";});
 
-// ---------- Touch support ----------
+// Touch
 svg.addEventListener("touchstart", e=>{
   if(popup.style.display==="block") return;
   if(e.touches.length===1){
     dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY;
-  }else if(e.touches.length===2){
-    lastTouchDist=Math.hypot(
-      e.touches[0].clientX-e.touches[1].clientX,
-      e.touches[0].clientY-e.touches[1].clientY
-    );
+  } else if(e.touches.length===2){
+    lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
     lastTouchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2 - panX;
     lastTouchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2 - panY;
   }
@@ -263,19 +246,15 @@ svg.addEventListener("touchmove", e=>{
   e.preventDefault();
   if(e.touches.length===1 && dragging){
     panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY;
-  }else if(e.touches.length===2){
-    const dist=Math.hypot(
-      e.touches[0].clientX-e.touches[1].clientX,
-      e.touches[0].clientY-e.touches[1].clientY
-    );
+  } else if(e.touches.length===2){
+    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
     if(lastTouchDist){
       const factor=dist/lastTouchDist;
       targetScale*=factor;
-      targetScale=Math.max(0.5, Math.min(targetScale,2));
       const midX=(e.touches[0].clientX+e.touches[1].clientX)/2;
       const midY=(e.touches[0].clientY+e.touches[1].clientY)/2;
-      panX -= (midX - panX - lastTouchMidX)*(factor-1);
-      panY -= (midY - panY - lastTouchMidY)*(factor-1);
+      panX -= (midX-panX-lastTouchMidX)*(factor-1);
+      panY -= (midY-panY-lastTouchMidY)*(factor-1);
     }
     lastTouchDist=dist;
   }
