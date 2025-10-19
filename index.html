@@ -96,7 +96,7 @@ svg.addEventListener('mousedown', e=>{ if(popup.style.display==='block') return;
 window.addEventListener('mousemove', e=>{ if(!dragging) return; panX=e.clientX-startX; panY=e.clientY-startY; applyTransform(); });
 window.addEventListener('mouseup', ()=>{ dragging=false; svg.style.cursor='grab'; });
 
-// ---------- Touch (smooth pinch zoom) ----------
+// ---------- Touch ----------
 svg.addEventListener('touchstart', e=>{
   if(e.touches.length===1){ dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY; }
   else if(e.touches.length===2){
@@ -125,7 +125,7 @@ svg.addEventListener('touchend', e=>{ if(e.touches.length<2) lastTouchDist=null;
 
 // ---------- Tree Layout ----------
 function computeLeafCounts(node){ if(!node.children||node.children.length===0){ node._leafCount=1; return 1;} let sum=0; node.children.forEach(c=>sum+=computeLeafCounts(c)); node._leafCount=sum; return sum;}
-function assignPositions(node, depth, xOffsetRef){ const levelY=40+depth*LEVEL_V_GAP; if(!node.children||node.children.length===0){ const x=xOffsetRef.value+BOX_W/2; node._x=x; node._y=levelY; xOffsetRef.value+=BOX_W+LEAF_H_SPACING; } else{ node.children.forEach(c=>assignPositions(c,depth+1,xOffsetRef)); const first=node.children[0], last=node.children[node.children.length-1]; node._x=(first._x+last._x)/2; node._y=levelY;}}
+function assignPositions(node, depth, xOffsetRef){ const levelY=40+depth*120; if(!node.children||node.children.length===0){ const x=xOffsetRef.value+BOX_W/2; node._x=x; node._y=levelY; xOffsetRef.value+=BOX_W+24; } else{ node.children.forEach(c=>assignPositions(c,depth+1,xOffsetRef)); const first=node.children[0], last=node.children[node.children.length-1]; node._x=(first._x+last._x)/2; node._y=levelY;}}
 function drawConnector(px,py,cx,cy){ const parentBottomY=py+BOX_H/2; const childTopY=cy-BOX_H/2; const midY=(parentBottomY+childTopY)/2; const d=`M ${px} ${parentBottomY} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${childTopY}`; const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d); path.setAttribute('class','link'); return path;}
 function buildTree(data){
   data.forEach(root=>computeLeafCounts(root));
@@ -140,8 +140,8 @@ function buildTree(data){
     rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
     rect.setAttribute('rx',8); rect.setAttribute('ry',8);
     // Color based on type
-    if(n.type==="group") rect.setAttribute('fill','rgba(255,0,0,0.2)');
-    else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.2)');
+    if(n.type==="group") rect.setAttribute('fill','#ffffff'); // groups white
+    else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.1)'); // lighter green
     else rect.setAttribute('fill','var(--box)');
     rect.setAttribute('stroke','var(--accent)');
     const text=document.createElementNS('http://www.w3.org/2000/svg','text');
