@@ -55,121 +55,134 @@ path.link { stroke:#a0bcd0; stroke-width:2; fill:none; }
 </div>
 
 <script>
-// ---------------- Data ----------------
-const data=[
-  {name:"Indo-European", info:"Major family including Europe and South Asia."},
-  {name:"Uralic", info:"Includes Finnish, Estonian, Hungarian."}
-];
-
-// ---------------- Elements ----------------
-const svg=document.getElementById("tree-svg");
-const group=document.getElementById("tree-group");
+// ---------------- Popup ----------------
 const overlay=document.getElementById("overlay");
 const popup=document.getElementById("popup");
 const popupTitle=document.getElementById("popupTitle");
 const popupInfo=document.getElementById("popupInfo");
 const closePopup=document.getElementById("closePopup");
-
-// ---------------- Layout ----------------
-const width=svg.clientWidth, height=svg.clientHeight;
-function layout(data){
-  const nodes=[];
-  data.forEach((root,i)=>{
-    const x = width/2 + (i===0?-150:150); // two groups centered horizontally
-    const y = 100;
-    root.x = x; root.y = y; nodes.push(root);
-  });
-  return nodes;
-}
-
-// ---------------- Draw ----------------
-function draw(){
-  group.innerHTML="";
-  const nodes=layout(data);
-  nodes.forEach(n=>{
-    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-    g.setAttribute("class","node"); g.setAttribute("transform",`translate(${n.x},${n.y})`);
-    g.dataset.name=n.name; g.dataset.info=n.info;
-    const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
-    rect.setAttribute("x",-70); rect.setAttribute("y",-25); rect.setAttribute("width",140); rect.setAttribute("height",50);
-    const text=document.createElementNS("http://www.w3.org/2000/svg","text");
-    text.setAttribute("text-anchor","middle"); text.setAttribute("dy","5"); text.textContent=n.name;
-    g.appendChild(rect); g.appendChild(text); group.appendChild(g);
-    g.addEventListener("click", e=>{
-      e.stopPropagation(); showPopup(n.name,n.info);
-    });
-  });
-}
-draw();
-
-// ---------------- Popup ----------------
-function showPopup(title,info){ popupTitle.textContent=title; popupInfo.textContent=info; popup.style.display="block"; overlay.style.display="block";}
-function hidePopup(){ popup.style.display="none"; overlay.style.display="none";}
+function showPopup(title,info){ popupTitle.textContent=title; popupInfo.textContent=info; popup.style.display="block"; overlay.style.display="block"; }
+function hidePopup(){ popup.style.display="none"; overlay.style.display="none"; }
 closePopup.onclick=hidePopup; overlay.onclick=hidePopup;
 
-// ---------------- Intro Popup ----------------
-window.addEventListener("load", ()=>{
-  showPopup("Welcome to the Language Tree", "This interactive tree shows the main language families. Click on a group to learn more. You can drag the tree and zoom in/out.");
-});
-
-// ---------------- Drag & Smooth Zoom ----------------
+// ---------------- Tree Setup ----------------
+const svg=document.getElementById("tree-svg");
+const group=document.getElementById("tree-group");
 let panX=0, panY=0, scale=1;
 let dragging=false, startX, startY;
 
-function updateTransform(){ group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`); }
+function updateTransform(){
+  group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`);
+}
 
-// Mouse wheel zoom (smooth)
+// Smooth cursor-centered zoom
 svg.addEventListener("wheel", e=>{
   if(popup.style.display==="block") return;
   e.preventDefault();
-  const rect = svg.getBoundingClientRect();
-  const cx = e.clientX - rect.left;
-  const cy = e.clientY - rect.top;
-
-  const factor = e.deltaY < 0 ? 1.05 : 0.95;
-  panX -= (cx - panX)*(factor-1);
-  panY -= (cy - panY)*(factor-1);
-  scale *= factor;
-  scale = Math.max(0.5, Math.min(scale,3));
+  const rect=svg.getBoundingClientRect();
+  const cx=e.clientX-rect.left;
+  const cy=e.clientY-rect.top;
+  const factor=e.deltaY<0?1.05:0.95;
+  panX-=(cx-panX)*(factor-1);
+  panY-=(cy-panY)*(factor-1);
+  scale*=factor;
+  scale=Math.max(0.5,Math.min(scale,3));
   updateTransform();
 });
 
-// Drag (solid)
+// Drag
 svg.addEventListener("mousedown", e=>{
   if(popup.style.display==="block") return;
-  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
+  dragging=true;
+  startX=e.clientX-panX;
+  startY=e.clientY-panY;
+  svg.style.cursor="grabbing";
 });
-window.addEventListener("mousemove", e=>{if(dragging){ panX=e.clientX-startX; panY=e.clientY-startY; updateTransform(); }});
-window.addEventListener("mouseup", ()=>{ dragging=false; svg.style.cursor="grab"; });
+window.addEventListener("mousemove", e=>{
+  if(dragging){ panX=e.clientX-startX; panY=e.clientY-startY; updateTransform(); }
+});
+window.addEventListener("mouseup", ()=>{
+  dragging=false; svg.style.cursor="grab";
+});
 
-// Touch pan and pinch zoom
-let lastTouchDist=null, lastTouchMidX=0, lastTouchMidY=0;
-svg.addEventListener("touchstart", e=>{
-  if(popup.style.display==="block") return;
-  if(e.touches.length===1){ dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY; }
-  else if(e.touches.length===2){
-    lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    lastTouchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2;
-    lastTouchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+// ---------------- Load JSON ----------------
+async function loadTree(){
+  try{
+    const res=await fetch("languages.json");
+    const data=await res.json();
+    buildTree(data);
+    showPopup("Welcome to the Language Tree",
+      "This tree shows global language families. Click a group to see details, and zoom or drag to explore!");
+  }catch(err){
+    console.error("Error loading JSON:",err);
+    showPopup("Error","Could not load languages.json. Make sure it exists!");
   }
-});
-svg.addEventListener("touchmove", e=>{
-  if(popup.style.display==="block") return;
-  e.preventDefault();
-  if(e.touches.length===1 && dragging){ panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY; updateTransform(); }
-  else if(e.touches.length===2){
-    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    if(lastTouchDist){
-      const factor=dist/lastTouchDist;
-      panX -= (lastTouchMidX-panX)*(factor-1);
-      panY -= (lastTouchMidY-panY)*(factor-1);
-      scale*=factor; scale=Math.max(0.5, Math.min(scale,3));
-      updateTransform();
+}
+
+// ---------------- Draw Tree ----------------
+function buildTree(data){
+  group.innerHTML="";
+  const nodes=[];
+  const links=[];
+  
+  function traverse(node,x,y,depth,parent){
+    nodes.push({...node,x,y,depth});
+    if(parent) links.push({x1:parent.x,y1:parent.y,x2:x,y2:y});
+    if(node.children){
+      const step=200;
+      node.children.forEach((child,i)=>{
+        const childY=y+100;
+        const offset=(i-(node.children.length-1)/2)*step;
+        traverse(child,x+offset,childY,depth+1,node);
+      });
     }
-    lastTouchDist=dist;
   }
-});
-svg.addEventListener("touchend", e=>{ if(e.touches.length<2) lastTouchDist=null; if(e.touches.length===0) dragging=false; });
+
+  // layout start positions
+  let startX=0;
+  const spacing=400;
+  data.forEach((root,i)=>{
+    traverse(root, startX+i*spacing, 50, 0, null);
+  });
+
+  // Draw links
+  links.forEach(l=>{
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    const mx=(l.x1+l.x2)/2;
+    path.setAttribute("d",`M${l.x1},${l.y1} C${mx},${l.y1} ${mx},${l.y2} ${l.x2},${l.y2}`);
+    path.setAttribute("class","link");
+    group.appendChild(path);
+  });
+
+  // Draw nodes
+  nodes.forEach(n=>{
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","node");
+    g.setAttribute("transform",`translate(${n.x},${n.y})`);
+    g.addEventListener("click",e=>{
+      e.stopPropagation();
+      showPopup(n.name,n.info||"No information available.");
+    });
+    const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    rect.setAttribute("x",-70);
+    rect.setAttribute("y",-25);
+    rect.setAttribute("width",140);
+    rect.setAttribute("height",50);
+    const text=document.createElementNS("http://www.w3.org/2000/svg","text");
+    text.setAttribute("text-anchor","middle");
+    text.setAttribute("dy","5");
+    text.textContent=n.name;
+    g.appendChild(rect);
+    g.appendChild(text);
+    group.appendChild(g);
+  });
+
+  panX=window.innerWidth/2;
+  panY=100;
+  updateTransform();
+}
+
+loadTree();
 </script>
 </body>
 </html>
