@@ -186,7 +186,6 @@ function draw(){
       popupInfo.textContent=g.dataset.info;
       popup.style.display="block";
       overlay.style.display="block";
-      dragging=false; // pause dragging while popup open
     });
   });
 }
@@ -201,7 +200,11 @@ const intro=document.getElementById("introPopup");
 
 document.getElementById("closePopup").onclick=()=>{popup.style.display="none"; overlay.style.display="none";}
 document.getElementById("closeIntro").onclick=()=>{intro.style.display="none";}
-overlay.addEventListener("click", ()=>{popup.style.display="none"; overlay.style.display="none";});
+
+overlay.addEventListener("click", ()=>{
+  popup.style.display="none";
+  overlay.style.display="none";
+});
 
 // ---------- Drag & Smooth Zoom ----------
 let scale=1, targetScale=1, panX=0, panY=0;
@@ -215,26 +218,29 @@ function updateTransform(){
 }
 requestAnimationFrame(updateTransform);
 
-// Mouse zoom
+// ---------- Mouse Zoom with cursor focus ----------
 svg.addEventListener("wheel", e=>{
-  if(popup.style.display==="block") return; // disable zoom if popup open
   e.preventDefault();
+  const rect=svg.getBoundingClientRect();
+  const cx=e.clientX - rect.left;
+  const cy=e.clientY - rect.top;
   const factor=e.deltaY<0?1.1:0.9;
+
+  // adjust pan to keep cursor position steady
+  panX -= (cx - panX)*(factor-1);
+  panY -= (cy - panY)*(factor-1);
+
   targetScale*=factor;
   targetScale=Math.max(0.5, Math.min(targetScale,2));
 });
 
-// Mouse drag
-svg.addEventListener("mousedown", e=>{
-  if(popup.style.display==="block") return;
-  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
-});
+// ---------- Mouse Drag ----------
+svg.addEventListener("mousedown", e=>{dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";});
 window.addEventListener("mousemove", e=>{if(dragging){panX=e.clientX-startX; panY=e.clientY-startY;}});
 window.addEventListener("mouseup", ()=>{dragging=false; svg.style.cursor="grab";});
 
-// Touch support
+// ---------- Touch support with pinch zoom ----------
 svg.addEventListener("touchstart", e=>{
-  if(popup.style.display==="block") return;
   if(e.touches.length===1){
     dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY;
   }else if(e.touches.length===2){
@@ -242,13 +248,16 @@ svg.addEventListener("touchstart", e=>{
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
+    // midpoint
+    lastTouchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2 - panX;
+    lastTouchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2 - panY;
   }
 });
 svg.addEventListener("touchmove", e=>{
-  if(popup.style.display==="block") return;
   e.preventDefault();
   if(e.touches.length===1 && dragging){
-    panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY;
+    panX=e.touches[0].clientX-startX;
+    panY=e.touches[0].clientY-startY;
   }else if(e.touches.length===2){
     const dist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
@@ -258,6 +267,11 @@ svg.addEventListener("touchmove", e=>{
       const factor=dist/lastTouchDist;
       targetScale*=factor;
       targetScale=Math.max(0.5, Math.min(targetScale,2));
+      // adjust pan to keep midpoint steady
+      const midX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      const midY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      panX -= (midX - panX - lastTouchMidX)*(factor-1);
+      panY -= (midY - panY - lastTouchMidY)*(factor-1);
     }
     lastTouchDist=dist;
   }
