@@ -14,6 +14,7 @@ body {
 }
 #tree-container { width:100vw; height:100vh; touch-action:none; cursor:grab; }
 svg { width:100%; height:100%; }
+#tree-group { transition: transform 0.05s linear; }
 .node rect {
   fill:#fff; stroke:#5b9bd5; stroke-width:2; rx:8; ry:8;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
@@ -70,22 +71,21 @@ const popupInfo=document.getElementById("popupInfo");
 const closePopup=document.getElementById("closePopup");
 
 // ---------------- Layout ----------------
-const dx=300, dy=150, width=svg.clientWidth, height=svg.clientHeight;
+const width=svg.clientWidth, height=svg.clientHeight;
 function layout(data){
-  const nodes=[], links=[];
+  const nodes=[];
   data.forEach((root,i)=>{
     const x = width/2 + (i===0?-150:150); // two groups centered horizontally
     const y = 100;
     root.x = x; root.y = y; nodes.push(root);
   });
-  return {nodes, links};
+  return nodes;
 }
 
 // ---------------- Draw ----------------
 function draw(){
   group.innerHTML="";
-  const {nodes, links}=layout(data);
-  // no links for just two main groups
+  const nodes=layout(data);
   nodes.forEach(n=>{
     const g=document.createElementNS("http://www.w3.org/2000/svg","g");
     g.setAttribute("class","node"); g.setAttribute("transform",`translate(${n.x},${n.y})`);
@@ -112,26 +112,25 @@ window.addEventListener("load", ()=>{
   showPopup("Welcome to the Language Tree", "This interactive tree shows the main language families. Click on a group to learn more. You can drag the tree and zoom in/out.");
 });
 
-// ---------------- Drag & Cursor-Centered Zoom ----------------
+// ---------------- Drag & Smooth Zoom ----------------
 let panX=0, panY=0, scale=1;
 let dragging=false, startX, startY;
 
-function updateTransform(){
-  group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`);
-}
+function updateTransform(){ group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`); }
 
-// Mouse wheel zoom centered on cursor
+// Mouse wheel zoom (smooth)
 svg.addEventListener("wheel", e=>{
   if(popup.style.display==="block") return;
   e.preventDefault();
-  const rect=svg.getBoundingClientRect();
-  const cx=e.clientX-rect.left;
-  const cy=e.clientY-rect.top;
-  const factor=e.deltaY<0?1.1:0.9;
-  panX -= (cx-panX)*(factor-1);
-  panY -= (cy-panY)*(factor-1);
-  scale*=factor;
-  scale=Math.max(0.5, Math.min(scale,3));
+  const rect = svg.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+
+  const factor = e.deltaY < 0 ? 1.05 : 0.95;
+  panX -= (cx - panX)*(factor-1);
+  panY -= (cy - panY)*(factor-1);
+  scale *= factor;
+  scale = Math.max(0.5, Math.min(scale,3));
   updateTransform();
 });
 
