@@ -2,53 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Language Tree Smooth Zoom</title>
+<title>SVG Zoomable Language Tree</title>
 <style>
-  body { font-family: Arial; background: #f4f4f4; margin:0; padding:20px; text-align:center; overflow:hidden; }
-  h1 { text-align:center; margin-bottom:30px; }
-
-  #tree-container {
-    width: 100%;
-    height: 90vh;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #tree {
-    display: inline-block;
-    transform-origin: center top;
-    transition: transform 0.1s ease;
-    position: relative;
-  }
-
-  .tree ul {
-    list-style-type: none;
-    padding-left: 0;
-    text-align: center;
-    position: relative;
-  }
-
-  .tree li {
-    display: inline-block;
-    vertical-align: top;
-    text-align: center;
-    padding: 40px 20px 0 20px;
-    position: relative;
-  }
-
-  .node {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background: #fff;
-    display: inline-block;
-    position: relative;
-    z-index: 1;
-  }
-
-  .node:hover { background: #e6f7ff; border-color: #1e90ff; cursor: pointer; }
-
-  /* Popup */
+  body { font-family: Arial; background: #f4f4f4; margin:0; padding:20px; text-align:center; }
+  h1 { margin-bottom: 30px; }
+  #tree-container { width: 100%; height: 90vh; overflow: hidden; border:1px solid #ccc; background:#fff; position:relative; }
+  svg { width:100%; height:100%; }
+  .node rect { fill:#fff; stroke:#ccc; stroke-width:2; rx:5; ry:5; }
+  .node text { font-size:14px; pointer-events:none; }
+  .node:hover rect { fill:#e6f7ff; stroke:#1e90ff; cursor:pointer; }
   .popup {
     position: fixed; top:50%; left:50%;
     transform: translate(-50%, -50%);
@@ -60,49 +22,13 @@
   .popup h2 { margin-top:0; }
   .popup .close { cursor:pointer; float:right; font-weight:bold; font-size:20px; color:#1e90ff; }
   .overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:none; z-index:900; }
-
-  svg { position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
 </style>
 </head>
 <body>
-<h1>World Language Tree</h1>
+<h1>SVG Zoomable Language Tree</h1>
 
 <div id="tree-container">
-  <svg id="connections"></svg>
-  <div id="tree" class="tree">
-    <ul>
-      <!-- Indo-European -->
-      <li>
-        <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
-        <ul>
-          <li>
-            <div class="node" data-info="Germanic: English, German, Dutch, Scandinavian.">Germanic</div>
-            <ul>
-              <li><div class="node" data-info="English: ~380 million speakers.">English</div></li>
-              <li><div class="node" data-info="German: Spoken in Germany, Austria, Switzerland.">German</div></li>
-            </ul>
-          </li>
-          <li>
-            <div class="node" data-info="Romance: Derived from Latin.">Romance</div>
-            <ul>
-              <li><div class="node" data-info="Spanish: ~460 million speakers.">Spanish</div></li>
-              <li><div class="node" data-info="French: Spoken in France, Canada, Africa.">French</div></li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-
-      <!-- Uralic -->
-      <li>
-        <div class="node" data-info="Uralic: Includes Finnish, Hungarian, Estonian.">Uralic</div>
-        <ul>
-          <li><div class="node" data-info="Finnish: Spoken in Finland.">Finnish</div></li>
-          <li><div class="node" data-info="Hungarian: Spoken in Hungary.">Hungarian</div></li>
-          <li><div class="node" data-info="Estonian: Spoken in Estonia.">Estonian</div></li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+  <svg id="tree-svg"></svg>
 </div>
 
 <!-- Popup -->
@@ -114,72 +40,147 @@
 </div>
 
 <script>
-  const nodes = document.querySelectorAll('.node');
-  const popup = document.getElementById('popup');
-  const overlay = document.querySelector('.overlay');
+  const treeData = [
+    {
+      name: "Indo-European",
+      info: "Root family with many languages in Europe and Asia.",
+      children: [
+        {
+          name: "Germanic",
+          info: "English, German, Dutch, Scandinavian.",
+          children: [
+            {name:"English", info:"~380 million speakers."},
+            {name:"German", info:"Spoken in Germany, Austria, Switzerland."}
+          ]
+        },
+        {
+          name: "Romance",
+          info: "Derived from Latin.",
+          children: [
+            {name:"Spanish", info:"~460 million speakers."},
+            {name:"French", info:"Spoken in France, Canada, Africa."}
+          ]
+        }
+      ]
+    },
+    {
+      name: "Uralic",
+      info: "Includes Finnish, Hungarian, Estonian.",
+      children: [
+        {name:"Finnish", info:"Spoken in Finland."},
+        {name:"Hungarian", info:"Spoken in Hungary."},
+        {name:"Estonian", info:"Spoken in Estonia."}
+      ]
+    }
+  ];
 
-  nodes.forEach(node => {
-    node.addEventListener('click', e => {
-      e.stopPropagation();
-      document.getElementById('popupTitle').textContent = node.textContent;
-      document.getElementById('popupInfo').textContent = node.getAttribute('data-info');
-      popup.style.display = 'block';
-      overlay.style.display = 'block';
-    });
-  });
+  const svg = document.getElementById('tree-svg');
+  const width = svg.clientWidth;
+  const height = svg.clientHeight;
 
-  document.getElementById('closePopup').addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
-  overlay.addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
-
-  window.addEventListener('load', () => {
-    document.getElementById('popupTitle').textContent = "Welcome!";
-    document.getElementById('popupInfo').textContent = "Explore all language families and languages. Click on a node to see information. Zoom with your mouse wheel.";
-    popup.style.display = 'block';
-    overlay.style.display = 'block';
-
-    drawConnections();
-  });
-
-  // Smooth zoom like FamilyEcho
-  const tree = document.getElementById('tree');
   let scale = 1;
-  window.addEventListener('wheel', e => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.05 : 0.05;
-    scale = Math.min(Math.max(0.2, scale + delta), 3);
-    tree.style.transform = `scale(${scale})`;
-  }, { passive: false });
 
-  // Draw SVG lines between parent and children
-  function drawConnections() {
-    const svg = document.getElementById('connections');
-    svg.innerHTML = '';
-    nodes.forEach(node => {
-      const parent = node.parentElement.parentElement.closest('li');
-      if(parent) {
-        const parentNode = parent.querySelector('.node');
-        const rect1 = parentNode.getBoundingClientRect();
-        const rect2 = node.getBoundingClientRect();
-        const containerRect = document.getElementById('tree-container').getBoundingClientRect();
-
-        const x1 = rect1.left + rect1.width/2 - containerRect.left;
-        const y1 = rect1.bottom - containerRect.top;
-        const x2 = rect2.left + rect2.width/2 - containerRect.left;
-        const y2 = rect2.top - containerRect.top;
-
-        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-        line.setAttribute('x1', x1);
-        line.setAttribute('y1', y1);
-        line.setAttribute('x2', x2);
-        line.setAttribute('y2', y2);
-        line.setAttribute('stroke', '#999');
-        line.setAttribute('stroke-width', '2');
-        svg.appendChild(line);
+  // Simple tree layout function
+  function layoutTree(data, x, y, dx=200, dy=100) {
+    let nodes = [];
+    let lines = [];
+    function traverse(node, x0, y0) {
+      node.x = x0;
+      node.y = y0;
+      nodes.push(node);
+      if(node.children) {
+        const n = node.children.length;
+        const startX = x0 - dx*(n-1)/2;
+        node.children.forEach((child, i) => {
+          const cx = startX + i*dx;
+          const cy = y0 + dy;
+          lines.push({x1:x0, y1:y0+15, x2:cx, y2:cy-15}); // 15px offset for box edges
+          traverse(child, cx, cy);
+        });
       }
+    }
+    data.forEach((root,i) => {
+      traverse(root, width/2 + (i-0.5)*400, 50);
+    });
+    return {nodes, lines};
+  }
+
+  function drawTree() {
+    svg.innerHTML = '';
+    const {nodes, lines} = layoutTree(treeData, width/2, 50);
+    
+    // Draw lines
+    lines.forEach(l => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', l.x1);
+      line.setAttribute('y1', l.y1);
+      line.setAttribute('x2', l.x2);
+      line.setAttribute('y2', l.y2);
+      line.setAttribute('stroke','#999');
+      line.setAttribute('stroke-width','2');
+      svg.appendChild(line);
+    });
+
+    // Draw nodes
+    nodes.forEach(n => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('class','node');
+      g.setAttribute('transform', `translate(${n.x},${n.y})`);
+      g.dataset.info = n.info;
+      g.dataset.name = n.name;
+
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', -50);
+      rect.setAttribute('y', -15);
+      rect.setAttribute('width', 100);
+      rect.setAttribute('height',30);
+
+      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.setAttribute('text-anchor','middle');
+      text.setAttribute('dy','5');
+      text.textContent = n.name;
+
+      g.appendChild(rect);
+      g.appendChild(text);
+      svg.appendChild(g);
     });
   }
 
-  window.addEventListener('resize', drawConnections);
+  drawTree();
+
+  // Popups
+  svg.addEventListener('click', e => {
+    if(e.target.parentNode.classList.contains('node')) {
+      const g = e.target.parentNode;
+      document.getElementById('popupTitle').textContent = g.dataset.name;
+      document.getElementById('popupInfo').textContent = g.dataset.info;
+      document.getElementById('popup').style.display='block';
+      document.querySelector('.overlay').style.display='block';
+    }
+  });
+
+  document.getElementById('closePopup').addEventListener('click', () => {
+    document.getElementById('popup').style.display='none';
+    document.querySelector('.overlay').style.display='none';
+  });
+  document.querySelector('.overlay').addEventListener('click', () => {
+    document.getElementById('popup').style.display='none';
+    document.querySelector('.overlay').style.display='none';
+  });
+
+  // Smooth zoom
+  window.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    scale = Math.min(Math.max(0.2, scale + delta), 3);
+    svg.setAttribute('transform', `scale(${scale})`);
+    svg.style.transformOrigin = '0 0';
+    svg.style.transform = `scale(${scale})`;
+  }, {passive:false});
+
+  // Resize redraw
+  window.addEventListener('resize', drawTree);
+
 </script>
 </body>
 </html>
