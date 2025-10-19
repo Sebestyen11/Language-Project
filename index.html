@@ -26,9 +26,11 @@
   .popup p{margin:0;color:#333}
   .popup .close{position:absolute;right:12px;top:8px;font-size:20px;color:var(--accent-dark);cursor:pointer}
   .overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:1001;display:none}
-  @media (max-width:480px){
-    .node text{font-size:12px}
+  #searchBox{
+    position:fixed; top:12px; left:12px; z-index:2000;
+    padding:6px 10px; border-radius:6px; border:1px solid #ccc; font-size:14px;
   }
+  @media (max-width:480px){ .node text{font-size:12px} }
 </style>
 </head>
 <body>
@@ -38,6 +40,8 @@
     <g id="tree-group"></g>
   </svg>
 </div>
+
+<input id="searchBox" type="text" placeholder="Search language...">
 
 <div class="overlay" id="overlay"></div>
 
@@ -61,6 +65,7 @@ const popup = document.getElementById('popup');
 const popupTitle = document.getElementById('popupTitle');
 const popupInfo = document.getElementById('popupInfo');
 const closePopup = document.getElementById('closePopup');
+const searchBox = document.getElementById('searchBox');
 
 function showPopup(title, info){
   popupTitle.textContent = title || 'No title';
@@ -79,14 +84,14 @@ let panX = 0, panY = 0, scale = 1;
 let dragging = false, startX = 0, startY = 0;
 function applyTransform(){ group.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`); }
 
-// ---------------- Smooth desktop wheel zoom ----------------
+// Smooth desktop wheel zoom
 svg.addEventListener('wheel', e => {
   if (popup.style.display === 'block') return;
   e.preventDefault();
   const rect = svg.getBoundingClientRect();
   const cx = e.clientX - rect.left;
   const cy = e.clientY - rect.top;
-  const zoomFactor = e.deltaY < 0 ? 1.06 : 0.94; // faster zoom
+  const zoomFactor = e.deltaY < 0 ? 1.06 : 0.94;
   const newScale = scale * zoomFactor;
   if (newScale < 0.5 || newScale > 3) return;
   panX = cx - (cx - panX) * (newScale / scale);
@@ -95,7 +100,7 @@ svg.addEventListener('wheel', e => {
   applyTransform();
 }, { passive: false });
 
-// ---------------- Drag ----------------
+// Drag
 svg.addEventListener('mousedown', e=>{
   if (popup.style.display === 'block') return;
   dragging = true;
@@ -114,7 +119,7 @@ window.addEventListener('mouseup', ()=>{
   svg.style.cursor = 'grab';
 });
 
-// ---------------- Smooth pinch zoom ----------------
+// Smooth pinch zoom
 let lastTouchDist = null;
 let lastTouchMid = null;
 svg.addEventListener('touchstart', e=>{
@@ -146,8 +151,7 @@ svg.addEventListener('touchmove', e=>{
       e.touches[0].clientX - e.touches[1].clientX,
       e.touches[0].clientY - e.touches[1].clientY
     );
-    // smoother, damped pinch zoom
-    const factor = 1 + (dist - lastTouchDist)/lastTouchDist * 0.6; 
+    const factor = 1 + (dist - lastTouchDist)/lastTouchDist * 0.6;
     const mid = {
       x: (e.touches[0].clientX + e.touches[1].clientX)/2,
       y: (e.touches[0].clientY + e.touches[1].clientY)/2
@@ -165,48 +169,39 @@ svg.addEventListener('touchend', e=>{
   if (e.touches.length === 0) dragging = false;
 });
 
-// ---------------- Layout ----------------
+// Layout functions
 function computeLeafCounts(node){
-  if (!node.children || node.children.length === 0){
-    node._leafCount = 1; return 1;
-  }
-  let sum = 0;
-  node.children.forEach(c => sum += computeLeafCounts(c));
-  node._leafCount = sum; return sum;
+  if (!node.children || node.children.length === 0){ node._leafCount = 1; return 1; }
+  let sum = 0; node.children.forEach(c=>sum+=computeLeafCounts(c));
+  node._leafCount=sum; return sum;
 }
-
 function assignPositions(node, depth, xOffsetRef){
   const levelY = 40 + depth * LEVEL_V_GAP;
-  if (!node.children || node.children.length === 0){
-    const x = xOffsetRef.value + (BOX_W/2);
-    node._x = x; node._y = levelY;
+  if(!node.children || node.children.length===0){
+    const x = xOffsetRef.value + (BOX_W/2); node._x=x; node._y=levelY;
     xOffsetRef.value += BOX_W + LEAF_H_SPACING;
   } else {
-    node.children.forEach(c => assignPositions(c, depth+1, xOffsetRef));
-    const first = node.children[0], last = node.children[node.children.length-1];
-    node._x = (first._x + last._x)/2; node._y = levelY;
+    node.children.forEach(c=>assignPositions(c,depth+1,xOffsetRef));
+    const first=node.children[0], last=node.children[node.children.length-1];
+    node._x=(first._x+last._x)/2; node._y=levelY;
   }
 }
-
 function drawConnector(px,py,cx,cy){
   const parentBottomY = py + BOX_H/2;
   const childTopY = cy - BOX_H/2;
   const midY = (parentBottomY + childTopY)/2;
-  const d = `M ${px} ${parentBottomY} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${childTopY}`;
+  const d=`M ${px} ${parentBottomY} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${childTopY}`;
   const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-  path.setAttribute('d', d);
-  path.setAttribute('class','link');
-  return path;
+  path.setAttribute('d',d); path.setAttribute('class','link'); return path;
 }
 
+// Build tree
 function buildTree(data){
-  data.forEach(root => computeLeafCounts(root));
-  const xOffsetRef = { value: 40 };
-  data.forEach(root => assignPositions(root,0,xOffsetRef));
-  group.innerHTML = '';
-  const nodes = [];
+  data.forEach(root=>computeLeafCounts(root));
+  const xOffsetRef={value:40}; data.forEach(root=>assignPositions(root,0,xOffsetRef));
+  group.innerHTML=''; const nodes=[];
   function collect(node){ nodes.push(node); if(node.children) node.children.forEach(c=>collect(c)); }
-  data.forEach(root => collect(root));
+  data.forEach(root=>collect(root));
   nodes.forEach(n=>{ if(n.children) n.children.forEach(c=>group.appendChild(drawConnector(n._x,n._y,c._x,c._y))); });
   nodes.forEach(n=>{
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
@@ -214,33 +209,62 @@ function buildTree(data){
     const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
     rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2); rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
     const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-    text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent = n.name;
+    text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
     g.appendChild(rect); g.appendChild(text);
     g.addEventListener('click', e=>{ e.stopPropagation(); showPopup(n.name,n.info||'No information available.') });
     group.appendChild(g);
   });
-  const xs = nodes.map(n=>n._x);
-  const minX = Math.min(...xs); const maxX = Math.max(...xs);
-  const treeWidth = maxX - minX + BOX_W; const svgW = window.innerWidth;
-  panX = (svgW - treeWidth)/2 - minX + BOX_W/2; panY = 20; scale = 1; applyTransform();
+  const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs);
+  const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth;
+  panX=(svgW-treeWidth)/2 - minX + BOX_W/2; panY=20; scale=1; applyTransform();
 }
 
-// ---------------- Load JSON ----------------
+// Load JSON
 async function loadAndRender(){
   try{
     const resp = await fetch('./languages.json');
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
     const data = await resp.json();
     buildTree(data);
-    showPopup('Welcome to the Language Tree', 'This site shows language families top→down. Click a box to view details. Drag to pan, scroll to zoom.');
+    showPopup('Welcome to the Language Tree','This site shows language families top→down. Click a box to view details. Drag to pan, scroll to zoom.');
   }catch(err){
-    console.error('Failed to load languages.json', err);
+    console.error('Failed to load languages.json',err);
     showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.');
   }
 }
 loadAndRender();
 window.addEventListener('resize', ()=>{ loadAndRender(); });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') hidePopup(); });
+
+// ---------------- Search functionality ----------------
+searchBox.addEventListener('input', ()=>{
+  const query = searchBox.value.toLowerCase();
+  const nodes = document.querySelectorAll('.node');
+  let firstMatch = null;
+  nodes.forEach(node=>{
+    const text = node.querySelector('text').textContent.toLowerCase();
+    if(query && text.includes(query)){
+      node.querySelector('rect').setAttribute('stroke','orange');
+      node.querySelector('rect').setAttribute('stroke-width','4');
+      if(!firstMatch) firstMatch=node;
+    } else {
+      node.querySelector('rect').setAttribute('stroke','var(--accent)');
+      node.querySelector('rect').setAttribute('stroke-width','2');
+    }
+  });
+  if(firstMatch){
+    const transform = firstMatch.getCTM();
+    const targetX = transform.e;
+    const targetY = transform.f;
+    const svgRect = svg.getBoundingClientRect();
+    const centerX = svgRect.width/2;
+    const centerY = svgRect.height/2;
+    panX = centerX - targetX*scale;
+    panY = centerY - targetY*scale;
+    scale = Math.min(2, Math.max(0.8, scale));
+    applyTransform();
+  }
+});
 </script>
 </body>
 </html>
