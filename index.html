@@ -2,17 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Centered Language Tree</title>
+  <title>Language Tree with Lines</title>
   <style>
     body { font-family: Arial; padding: 20px; background: #f4f4f4; text-align: center; }
     h1 { text-align: center; }
 
-    /* Tree styles */
-    .tree ul { list-style-type: none; padding-left: 0; display: inline-block; text-align: left; }
-    .tree li { margin: 10px auto; text-align: center; }
+    /* Tree container */
+    .tree ul {
+      padding-top: 20px; position: relative;
+      display: inline-block; text-align: center; 
+    }
+
+    .tree li {
+      display: inline-block; vertical-align: top;
+      text-align: center; position: relative;
+      padding: 20px 5px 0 5px;
+    }
+
+    /* Connectors */
+    .tree li::before, .tree li::after {
+      content: '';
+      position: absolute; top: 0; right: 50%;
+      border-top: 2px solid #ccc;
+      width: 50%; height: 20px;
+    }
+    .tree li::after {
+      right: auto; left: 50%;
+      border-left: 2px solid #ccc;
+      border-top: 0;
+    }
+    .tree li:only-child::before, .tree li:only-child::after { display: none; }
+
+    .tree ul::before {
+      content: '';
+      position: absolute; top: 0; left: 50%;
+      border-left: 2px solid #ccc; height: 20px; 
+    }
+
+    /* Node style */
     .node { padding: 5px 10px; border: 1px solid #ccc; border-radius: 5px; background: #fff; display: inline-block; }
     .node:hover { background: #e6f7ff; border-color: #1e90ff; cursor: pointer; }
-    .children { display: none; margin-top: 10px; }
+
+    /* Children hidden by default */
+    .children { display: none; }
 
     /* Popup styles */
     .popup {
@@ -33,7 +65,6 @@
 
   <div class="tree">
     <ul>
-      <!-- Indo-European centered -->
       <li>
         <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
         <ul class="children">
@@ -53,24 +84,6 @@
               <li><div class="node" data-info="Italian: Spoken in Italy.">Italian</div></li>
             </ul>
           </li>
-        </ul>
-      </li>
-
-      <!-- Sino-Tibetan -->
-      <li>
-        <div class="node" data-info="Sino-Tibetan: Major Asian language family.">Sino-Tibetan</div>
-        <ul class="children">
-          <li><div class="node" data-info="Mandarin: Most spoken language in the world.">Mandarin</div></li>
-          <li><div class="node" data-info="Cantonese: Spoken in southern China and Hong Kong.">Cantonese</div></li>
-        </ul>
-      </li>
-
-      <!-- Niger-Congo -->
-      <li>
-        <div class="node" data-info="Niger-Congo: Large African language family.">Niger-Congo</div>
-        <ul class="children">
-          <li><div class="node" data-info="Swahili: Spoken in East Africa.">Swahili</div></li>
-          <li><div class="node" data-info="Yoruba: Spoken in Nigeria.">Yoruba</div></li>
         </ul>
       </li>
     </ul>
@@ -109,10 +122,10 @@
     document.getElementById('closePopup').addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
     overlay.addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
 
-    // Welcome popup on page load
+    // Welcome popup
     window.addEventListener('load', () => {
       document.getElementById('popupTitle').textContent = "Welcome to the World Language Tree!";
-      document.getElementById('popupInfo').textContent = "Click on any node to see information about that language or family. Collapse or expand branches to explore!";
+      document.getElementById('popupInfo').textContent = "Click on any node to see information. Collapse or expand branches to explore!";
       popup.style.display = 'block';
       overlay.style.display = 'block';
     });
