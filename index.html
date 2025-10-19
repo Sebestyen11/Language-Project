@@ -1,162 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Language Tree Zoom</title>
-  <style>
-    body { font-family: Arial; background: #f4f4f4; overflow: hidden; padding: 20px; text-align: center; }
-    h1 { text-align: center; margin-bottom: 40px; }
+<meta charset="UTF-8">
+<title>Language Tree Smooth Zoom</title>
+<style>
+  body { font-family: Arial; background: #f4f4f4; margin:0; padding:20px; text-align:center; overflow:hidden; }
+  h1 { text-align:center; margin-bottom:30px; }
 
-    #tree-container {
-      width: 100%;
-      height: 90vh;
-      overflow: hidden;
-      text-align: center;
-    }
+  #tree-container {
+    width: 100%;
+    height: 90vh;
+    overflow: hidden;
+    position: relative;
+  }
 
-    #tree {
-      display: inline-block;
-      transform-origin: center center;
-      transition: transform 0.1s;
-    }
+  #tree {
+    display: inline-block;
+    transform-origin: center top;
+    transition: transform 0.1s ease;
+    position: relative;
+  }
 
-    .tree ul {
-      list-style-type: none;
-      padding-left: 20px;
-      text-align: center;
-      position: relative;
-    }
+  .tree ul {
+    list-style-type: none;
+    padding-left: 0;
+    text-align: center;
+    position: relative;
+  }
 
-    .tree li {
-      display: inline-block;
-      vertical-align: top;
-      text-align: center;
-      padding: 20px 5px 0 5px;
-      position: relative;
-    }
+  .tree li {
+    display: inline-block;
+    vertical-align: top;
+    text-align: center;
+    padding: 40px 20px 0 20px;
+    position: relative;
+  }
 
-    /* Connectors */
-    .tree li::before, .tree li::after {
-      content: '';
-      position: absolute; top: 0; right: 50%;
-      border-top: 2px solid #ccc;
-      width: 50%; height: 20px;
-    }
-    .tree li::after {
-      right: auto; left: 50%;
-      border-left: 2px solid #ccc;
-      border-top: 0;
-    }
-    .tree li:only-child::before, .tree li:only-child::after { display: none; }
-    .tree ul::before {
-      content: '';
-      position: absolute; top: 0; left: 50%;
-      border-left: 2px solid #ccc; height: 20px;
-    }
+  .node {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #fff;
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+  }
 
-    .node { padding: 5px 10px; border: 1px solid #ccc; border-radius: 5px; background: #fff; display: inline-block; }
-    .node:hover { background: #e6f7ff; border-color: #1e90ff; cursor: pointer; }
+  .node:hover { background: #e6f7ff; border-color: #1e90ff; cursor: pointer; }
 
-    /* Popup */
-    .popup {
-      position: fixed; top:50%; left:50%;
-      transform: translate(-50%, -50%);
-      background:#fff; border:2px solid #1e90ff;
-      border-radius:10px; padding:20px;
-      display:none; z-index:1000; max-width:80%;
-      box-shadow:0 5px 15px rgba(0,0,0,0.3);
-    }
-    .popup h2 { margin-top:0; }
-    .popup .close { cursor:pointer; float:right; font-weight:bold; font-size:20px; color:#1e90ff; }
-    .overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:none; z-index:900; }
-  </style>
+  /* Popup */
+  .popup {
+    position: fixed; top:50%; left:50%;
+    transform: translate(-50%, -50%);
+    background:#fff; border:2px solid #1e90ff;
+    border-radius:10px; padding:20px;
+    display:none; z-index:1000; max-width:80%;
+    box-shadow:0 5px 15px rgba(0,0,0,0.3);
+  }
+  .popup h2 { margin-top:0; }
+  .popup .close { cursor:pointer; float:right; font-weight:bold; font-size:20px; color:#1e90ff; }
+  .overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:none; z-index:900; }
+
+  svg { position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
+</style>
 </head>
 <body>
-  <h1>World Language Tree</h1>
+<h1>World Language Tree</h1>
 
-  <div id="tree-container">
-    <div id="tree" class="tree">
-      <ul>
-        <!-- Indo-European -->
-        <li>
-          <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
-          <ul>
-            <li>
-              <div class="node" data-info="Germanic: English, German, Dutch, Scandinavian.">Germanic</div>
-              <ul>
-                <li><div class="node" data-info="English: ~380 million speakers.">English</div></li>
-                <li><div class="node" data-info="German: Spoken in Germany, Austria, Switzerland.">German</div></li>
-                <li><div class="node" data-info="Swedish: Spoken in Sweden and parts of Finland.">Swedish</div></li>
-              </ul>
-            </li>
-            <li>
-              <div class="node" data-info="Romance: Derived from Latin.">Romance</div>
-              <ul>
-                <li><div class="node" data-info="Spanish: ~460 million speakers.">Spanish</div></li>
-                <li><div class="node" data-info="French: Spoken in France, Canada, Africa.">French</div></li>
-                <li><div class="node" data-info="Italian: Spoken in Italy.">Italian</div></li>
-              </ul>
-            </li>
-          </ul>
-        </li>
+<div id="tree-container">
+  <svg id="connections"></svg>
+  <div id="tree" class="tree">
+    <ul>
+      <!-- Indo-European -->
+      <li>
+        <div class="node" data-info="Indo-European: Root family with many languages in Europe and Asia.">Indo-European</div>
+        <ul>
+          <li>
+            <div class="node" data-info="Germanic: English, German, Dutch, Scandinavian.">Germanic</div>
+            <ul>
+              <li><div class="node" data-info="English: ~380 million speakers.">English</div></li>
+              <li><div class="node" data-info="German: Spoken in Germany, Austria, Switzerland.">German</div></li>
+            </ul>
+          </li>
+          <li>
+            <div class="node" data-info="Romance: Derived from Latin.">Romance</div>
+            <ul>
+              <li><div class="node" data-info="Spanish: ~460 million speakers.">Spanish</div></li>
+              <li><div class="node" data-info="French: Spoken in France, Canada, Africa.">French</div></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
 
-        <!-- Uralic -->
-        <li>
-          <div class="node" data-info="Uralic: Includes Finnish, Hungarian, Estonian.">Uralic</div>
-          <ul>
-            <li><div class="node" data-info="Finnish: Spoken in Finland.">Finnish</div></li>
-            <li><div class="node" data-info="Hungarian: Spoken in Hungary.">Hungarian</div></li>
-            <li><div class="node" data-info="Estonian: Spoken in Estonia.">Estonian</div></li>
-          </ul>
-        </li>
-      </ul>
-    </div>
+      <!-- Uralic -->
+      <li>
+        <div class="node" data-info="Uralic: Includes Finnish, Hungarian, Estonian.">Uralic</div>
+        <ul>
+          <li><div class="node" data-info="Finnish: Spoken in Finland.">Finnish</div></li>
+          <li><div class="node" data-info="Hungarian: Spoken in Hungary.">Hungarian</div></li>
+          <li><div class="node" data-info="Estonian: Spoken in Estonia.">Estonian</div></li>
+        </ul>
+      </li>
+    </ul>
   </div>
+</div>
 
-  <!-- Popup & Overlay -->
-  <div class="overlay"></div>
-  <div class="popup" id="popup">
-    <span class="close" id="closePopup">&times;</span>
-    <h2 id="popupTitle"></h2>
-    <p id="popupInfo"></p>
-  </div>
+<!-- Popup -->
+<div class="overlay"></div>
+<div class="popup" id="popup">
+  <span class="close" id="closePopup">&times;</span>
+  <h2 id="popupTitle"></h2>
+  <p id="popupInfo"></p>
+</div>
 
-  <script>
-    // Popup
-    const nodes = document.querySelectorAll('.node');
-    const popup = document.getElementById('popup');
-    const overlay = document.querySelector('.overlay');
+<script>
+  const nodes = document.querySelectorAll('.node');
+  const popup = document.getElementById('popup');
+  const overlay = document.querySelector('.overlay');
 
-    nodes.forEach(node => {
-      node.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('popupTitle').textContent = node.textContent;
-        document.getElementById('popupInfo').textContent = node.getAttribute('data-info');
-        popup.style.display = 'block';
-        overlay.style.display = 'block';
-      });
-    });
-
-    document.getElementById('closePopup').addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
-    overlay.addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
-
-    // Welcome popup
-    window.addEventListener('load', () => {
-      document.getElementById('popupTitle').textContent = "Welcome!";
-      document.getElementById('popupInfo').textContent = "Explore all language families and languages. Click on a node to see information. Zoom with your mouse wheel.";
+  nodes.forEach(node => {
+    node.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('popupTitle').textContent = node.textContent;
+      document.getElementById('popupInfo').textContent = node.getAttribute('data-info');
       popup.style.display = 'block';
       overlay.style.display = 'block';
     });
+  });
 
-    // Smooth zoom on mouse wheel
-    const tree = document.getElementById('tree');
-    let scale = 1;
-    window.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
-      scale = Math.min(Math.max(0.2, scale + delta), 3);
-      tree.style.transform = `scale(${scale})`;
-    }, { passive: false });
-  </script>
+  document.getElementById('closePopup').addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
+  overlay.addEventListener('click', () => { popup.style.display='none'; overlay.style.display='none'; });
+
+  window.addEventListener('load', () => {
+    document.getElementById('popupTitle').textContent = "Welcome!";
+    document.getElementById('popupInfo').textContent = "Explore all language families and languages. Click on a node to see information. Zoom with your mouse wheel.";
+    popup.style.display = 'block';
+    overlay.style.display = 'block';
+
+    drawConnections();
+  });
+
+  // Smooth zoom like FamilyEcho
+  const tree = document.getElementById('tree');
+  let scale = 1;
+  window.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.05 : 0.05;
+    scale = Math.min(Math.max(0.2, scale + delta), 3);
+    tree.style.transform = `scale(${scale})`;
+  }, { passive: false });
+
+  // Draw SVG lines between parent and children
+  function drawConnections() {
+    const svg = document.getElementById('connections');
+    svg.innerHTML = '';
+    nodes.forEach(node => {
+      const parent = node.parentElement.parentElement.closest('li');
+      if(parent) {
+        const parentNode = parent.querySelector('.node');
+        const rect1 = parentNode.getBoundingClientRect();
+        const rect2 = node.getBoundingClientRect();
+        const containerRect = document.getElementById('tree-container').getBoundingClientRect();
+
+        const x1 = rect1.left + rect1.width/2 - containerRect.left;
+        const y1 = rect1.bottom - containerRect.top;
+        const x2 = rect2.left + rect2.width/2 - containerRect.left;
+        const y2 = rect2.top - containerRect.top;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#999');
+        line.setAttribute('stroke-width', '2');
+        svg.appendChild(line);
+      }
+    });
+  }
+
+  window.addEventListener('resize', drawConnections);
+</script>
 </body>
 </html>
