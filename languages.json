@@ -1,11 +1,11 @@
 [
   {
     "name": "Indo-European",
-    "info": "Major family including Europe and South Asia.",
+    "info": "A large language family spoken across Europe and South Asia.",
     "children": [
       {
         "name": "Germanic",
-        "info": "Includes English, German, Dutch, etc.",
+        "info": "Includes English, German, Dutch, and others.",
         "children": [
           {"name": "English", "info": "A West Germanic language."},
           {"name": "German", "info": "A West Germanic language."}
@@ -13,17 +13,17 @@
       },
       {
         "name": "Romance",
-        "info": "Derived from Latin.",
+        "info": "Languages that evolved from Latin.",
         "children": [
           {"name": "Spanish", "info": "Spoken widely in Spain and Latin America."},
-          {"name": "French", "info": "A Romance language of France."}
+          {"name": "French", "info": "A Romance language spoken in France."}
         ]
       }
     ]
   },
   {
     "name": "Uralic",
-    "info": "Includes Finnish, Estonian, Hungarian.",
+    "info": "A family including Finnish, Estonian, and Hungarian.",
     "children": [
       {"name": "Finnish", "info": "Spoken in Finland."},
       {"name": "Hungarian", "info": "Spoken in Hungary."}
