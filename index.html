@@ -4,8 +4,16 @@
 <meta charset="UTF-8">
 <title>Interactive Language Tree</title>
 <style>
-body { font-family: Arial; background: #f4f4f4; margin:0; padding:20px; overflow:hidden; }
-h1 { text-align: center; margin-bottom: 30px; }
+body { font-family: Arial, sans-serif; background: #f4f4f4; margin:0; padding:20px; overflow:hidden; }
+h1 {
+  text-align: center;
+  font-size: 3em;
+  background: linear-gradient(90deg, #ff7f50, #1e90ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  margin-bottom: 40px;
+}
 
 #tree-container {
   width: 100%;
@@ -36,7 +44,7 @@ svg { width: 100%; height: 100%; }
 </style>
 </head>
 <body>
-<h1>Interactive Language Tree</h1>
+<h1>World Language Tree</h1>
 <div id="tree-container">
   <svg id="tree-svg">
     <g id="tree-group"></g>
@@ -95,8 +103,11 @@ const height = svg.clientHeight;
 let panX = 0, panY = 0, scale = 1;
 let isDragging = false, startX, startY;
 
-// Recursive layout
-function layoutTree(data, startX, startY, dx=200, dy=100){
+// Adjusted spacing to prevent touching nodes
+const dx = 250; // horizontal spacing
+const dy = 140; // vertical spacing
+
+function layoutTree(data, startX, startY){
   let nodes = [];
   let links = [];
 
@@ -110,7 +121,6 @@ function layoutTree(data, startX, startY, dx=200, dy=100){
       node.children.forEach((child,i)=>{
         const cx = startChildX + i*dx;
         const cy = y + dy;
-        // loose step line
         links.push({x1:x, y1:y+15, x2:cx, y2:cy-15});
         traverse(child, cx, cy);
       });
@@ -124,12 +134,11 @@ function layoutTree(data, startX, startY, dx=200, dy=100){
   return {nodes, links};
 }
 
-// Draw tree
 function drawTree(){
   treeGroup.innerHTML = '';
   const {nodes, links} = layoutTree(treeData, width/2, 50);
 
-  // Draw lines
+  // Draw links
   links.forEach(l=>{
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     const midY = (l.y1 + l.y2)/2;
@@ -195,10 +204,7 @@ svg.addEventListener('wheel', e=>{
   const mouseX = e.offsetX;
   const mouseY = e.offsetY;
   const newScale = e.deltaY<0 ? scale*scaleFactor : scale/scaleFactor;
-
-  // Keep scale in bounds
-  const clamped = Math.min(Math.max(newScale, 0.2), 3);
-  // Adjust pan so zoom centers on cursor
+  const clamped = Math.min(Math.max(newScale,0.2),3);
   panX = mouseX - (mouseX - panX) * (clamped/scale);
   panY = mouseY - (mouseY - panY) * (clamped/scale);
   scale = clamped;
