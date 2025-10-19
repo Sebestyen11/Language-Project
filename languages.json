@@ -1,32 +1,54 @@
 [
   {
     "name": "Indo-European",
-    "info": "A large language family spoken across Europe and South Asia.",
+    "info": "One of the world's major language families.",
+    "type": "group",
     "children": [
       {
-        "name": "Germanic",
-        "info": "Includes English, German, Dutch, and others.",
+        "name": "Romance",
+        "info": "Includes French, Spanish, Italian, etc.",
+        "type": "group",
         "children": [
-          {"name": "English", "info": "A West Germanic language."},
-          {"name": "German", "info": "A West Germanic language."}
+          {"name": "French", "info": "Spoken in France and worldwide", "type": "living"},
+          {"name": "Spanish", "info": "Spoken in Spain and Latin America", "type": "living"},
+          {"name": "Italian", "info": "Spoken in Italy", "type": "living"}
         ]
       },
       {
-        "name": "Romance",
-        "info": "Languages that evolved from Latin.",
+        "name": "Germanic",
+        "info": "Includes English, German, Dutch, etc.",
+        "type": "group",
         "children": [
-          {"name": "Spanish", "info": "Spoken widely in Spain and Latin America."},
-          {"name": "French", "info": "A Romance language spoken in France."}
+          {"name": "English", "info": "Spoken worldwide", "type": "living"},
+          {"name": "German", "info": "Spoken in Germany, Austria, Switzerland", "type": "living"},
+          {"name": "Dutch", "info": "Spoken in Netherlands and Belgium", "type": "living"}
         ]
       }
     ]
   },
   {
     "name": "Uralic",
-    "info": "A family including Finnish, Estonian, and Hungarian.",
+    "info": "Languages mostly spoken in Northern Eurasia.",
+    "type": "group",
     "children": [
-      {"name": "Finnish", "info": "Spoken in Finland."},
-      {"name": "Hungarian", "info": "Spoken in Hungary."}
+      {
+        "name": "Finnic",
+        "info": "Includes Finnish, Estonian, etc.",
+        "type": "group",
+        "children": [
+          {"name": "Finnish", "info": "Spoken in Finland", "type": "living"},
+          {"name": "Estonian", "info": "Spoken in Estonia", "type": "living"}
+        ]
+      },
+      {
+        "name": "Ugric",
+        "info": "Includes Hungarian, Khanty, Mansi",
+        "type": "group",
+        "children": [
+          {"name": "Hungarian", "info": "Spoken in Hungary", "type": "living"},
+          {"name": "Khanty", "info": "Spoken in Russia", "type": "living"}
+        ]
+      }
     ]
   }
 ]
