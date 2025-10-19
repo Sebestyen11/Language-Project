@@ -16,7 +16,7 @@ body {
 svg { width:100%; height:100%; }
 .node rect {
   fill:#fff; stroke:#5b9bd5; stroke-width:2; rx:8; ry:8;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); transition:0.2s;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 .node:hover rect { fill:#e6f3ff; stroke:#0078d4; transform:scale(1.05); }
 .node text { font-size:14px; font-weight:500; fill:#333; pointer-events:none; }
@@ -42,7 +42,7 @@ path.link { stroke:#a0bcd0; stroke-width:2; fill:none; }
 <body>
 
 <div id="tree-container">
-  <svg id="tree-svg"><g id="tree-group" style="transition: transform 0.1s;"></g></svg>
+  <svg id="tree-svg"><g id="tree-group"></g></svg>
 </div>
 
 <div class="overlay" id="overlay"></div>
@@ -94,7 +94,8 @@ function layout(data){
       node.children.forEach((child,i)=>{
         const cx=start+i*dx;
         const cy=y+dy;
-        links.push({x1:x,y1:y+20,x2:cx,y2:cy-20});
+        // Adjust lines to stop at top/bottom of boxes
+        links.push({x1:x, y1:y+20, x2:cx, y2:cy-20});
         traverse(child,cx,cy);
       });
     }
@@ -161,28 +162,35 @@ svg.addEventListener("wheel", e=>{
   updateTransform();
 });
 
-// Drag
+// Drag (solid)
 svg.addEventListener("mousedown", e=>{
   if(popup.style.display==="block") return;
-  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
+  dragging=true;
+  startX=e.clientX-panX;
+  startY=e.clientY-panY;
+  svg.style.cursor="grabbing";
 });
 window.addEventListener("mousemove", e=>{
   if(dragging){
     panX=e.clientX-startX;
     panY=e.clientY-startY;
-    updateTransform();
+    updateTransform(); // immediate update, no transition
   }
 });
 window.addEventListener("mouseup", ()=>{
-  dragging=false; svg.style.cursor="grab";
+  dragging=false;
+  svg.style.cursor="grab";
 });
 
 // Touch pan and pinch zoom
 let lastTouchDist=null, lastTouchMidX=0, lastTouchMidY=0;
 svg.addEventListener("touchstart", e=>{
   if(popup.style.display==="block") return;
-  if(e.touches.length===1){ dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY; }
-  else if(e.touches.length===2){
+  if(e.touches.length===1){
+    dragging=true;
+    startX=e.touches[0].clientX-panX;
+    startY=e.touches[0].clientY-panY;
+  } else if(e.touches.length===2){
     lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
     lastTouchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2;
     lastTouchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
@@ -191,8 +199,11 @@ svg.addEventListener("touchstart", e=>{
 svg.addEventListener("touchmove", e=>{
   if(popup.style.display==="block") return;
   e.preventDefault();
-  if(e.touches.length===1 && dragging){ panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY; updateTransform(); }
-  else if(e.touches.length===2){
+  if(e.touches.length===1 && dragging){
+    panX=e.touches[0].clientX-startX;
+    panY=e.touches[0].clientY-startY;
+    updateTransform();
+  } else if(e.touches.length===2){
     const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
     if(lastTouchDist){
       const factor=dist/lastTouchDist;
@@ -204,7 +215,10 @@ svg.addEventListener("touchmove", e=>{
     lastTouchDist=dist;
   }
 });
-svg.addEventListener("touchend", e=>{ if(e.touches.length<2) lastTouchDist=null; if(e.touches.length===0) dragging=false; });
+svg.addEventListener("touchend", e=>{
+  if(e.touches.length<2) lastTouchDist=null;
+  if(e.touches.length===0) dragging=false;
+});
 </script>
 </body>
 </html>
