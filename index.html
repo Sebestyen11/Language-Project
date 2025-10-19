@@ -26,8 +26,7 @@ svg { width:100%; height:100%; }
   fill:#fff;
   stroke:#5b9bd5;
   stroke-width:2;
-  rx:8;
-  ry:8;
+  rx:8; ry:8;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
   transition:0.2s;
 }
@@ -182,34 +181,39 @@ function draw(){
 
     g.addEventListener("click", e=>{
       e.stopPropagation();
-      popupTitle.textContent=g.dataset.name;
-      popupInfo.textContent=g.dataset.info;
-      popup.style.display="block";
-      overlay.style.display="block";
+      showPopup(g.dataset.name,g.dataset.info);
     });
   });
 }
 draw();
 
-// ---------- Popups ----------
+// ---------- Popup functions ----------
 const popup=document.getElementById("popup");
 const popupTitle=document.getElementById("popupTitle");
 const popupInfo=document.getElementById("popupInfo");
 const overlay=document.getElementById("overlay");
 const intro=document.getElementById("introPopup");
 
-document.getElementById("closePopup").onclick=()=>{popup.style.display="none"; overlay.style.display="none";}
-document.getElementById("closeIntro").onclick=()=>{intro.style.display="none";}
+function showPopup(title,info){
+  popupTitle.textContent=title;
+  popupInfo.textContent=info;
+  popup.style.display="block";
+  overlay.style.display="block";
+}
 
-overlay.addEventListener("click", ()=>{
+function hidePopup(){
   popup.style.display="none";
   overlay.style.display="none";
-});
+}
+
+document.getElementById("closePopup").onclick=hidePopup;
+document.getElementById("closeIntro").onclick=()=>{intro.style.display="none";}
+overlay.addEventListener("click", hidePopup);
 
 // ---------- Drag & Smooth Zoom ----------
 let scale=1, targetScale=1, panX=0, panY=0;
 let dragging=false, startX, startY;
-let lastTouchDist=null;
+let lastTouchDist=null, lastTouchMidX=0, lastTouchMidY=0;
 
 function updateTransform(){
   scale += (targetScale - scale)*0.2;
@@ -218,29 +222,31 @@ function updateTransform(){
 }
 requestAnimationFrame(updateTransform);
 
-// ---------- Mouse Zoom with cursor focus ----------
+// ---------- Mouse zoom (centered on cursor) ----------
 svg.addEventListener("wheel", e=>{
+  if(popup.style.display==="block") return; // disable zoom if popup open
   e.preventDefault();
   const rect=svg.getBoundingClientRect();
   const cx=e.clientX - rect.left;
   const cy=e.clientY - rect.top;
   const factor=e.deltaY<0?1.1:0.9;
-
-  // adjust pan to keep cursor position steady
   panX -= (cx - panX)*(factor-1);
   panY -= (cy - panY)*(factor-1);
-
   targetScale*=factor;
   targetScale=Math.max(0.5, Math.min(targetScale,2));
 });
 
-// ---------- Mouse Drag ----------
-svg.addEventListener("mousedown", e=>{dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";});
-window.addEventListener("mousemove", e=>{if(dragging){panX=e.clientX-startX; panY=e.clientY-startY;}});
+// ---------- Mouse drag ----------
+svg.addEventListener("mousedown", e=>{
+  if(popup.style.display==="block") return;
+  dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
+});
+window.addEventListener("mousemove", e=>{if(dragging) {panX=e.clientX-startX; panY=e.clientY-startY;}});
 window.addEventListener("mouseup", ()=>{dragging=false; svg.style.cursor="grab";});
 
-// ---------- Touch support with pinch zoom ----------
+// ---------- Touch support ----------
 svg.addEventListener("touchstart", e=>{
+  if(popup.style.display==="block") return;
   if(e.touches.length===1){
     dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY;
   }else if(e.touches.length===2){
@@ -248,16 +254,15 @@ svg.addEventListener("touchstart", e=>{
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
-    // midpoint
     lastTouchMidX=(e.touches[0].clientX+e.touches[1].clientX)/2 - panX;
     lastTouchMidY=(e.touches[0].clientY+e.touches[1].clientY)/2 - panY;
   }
 });
 svg.addEventListener("touchmove", e=>{
+  if(popup.style.display==="block") return;
   e.preventDefault();
   if(e.touches.length===1 && dragging){
-    panX=e.touches[0].clientX-startX;
-    panY=e.touches[0].clientY-startY;
+    panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY;
   }else if(e.touches.length===2){
     const dist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
@@ -267,7 +272,6 @@ svg.addEventListener("touchmove", e=>{
       const factor=dist/lastTouchDist;
       targetScale*=factor;
       targetScale=Math.max(0.5, Math.min(targetScale,2));
-      // adjust pan to keep midpoint steady
       const midX=(e.touches[0].clientX+e.touches[1].clientX)/2;
       const midY=(e.touches[0].clientY+e.touches[1].clientY)/2;
       panX -= (midX - panX - lastTouchMidX)*(factor-1);
