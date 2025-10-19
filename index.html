@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Language Tree</title>
+<title>World Language Tree</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
@@ -55,17 +55,21 @@ path.link { stroke:#a0bcd0; stroke-width:2; fill:none; }
 </div>
 
 <script>
-// ---------------- Popup ----------------
 const overlay=document.getElementById("overlay");
 const popup=document.getElementById("popup");
 const popupTitle=document.getElementById("popupTitle");
 const popupInfo=document.getElementById("popupInfo");
 const closePopup=document.getElementById("closePopup");
-function showPopup(title,info){ popupTitle.textContent=title; popupInfo.textContent=info; popup.style.display="block"; overlay.style.display="block"; }
+
+function showPopup(title,info){ 
+  popupTitle.textContent=title; 
+  popupInfo.textContent=info; 
+  popup.style.display="block"; 
+  overlay.style.display="block"; 
+}
 function hidePopup(){ popup.style.display="none"; overlay.style.display="none"; }
 closePopup.onclick=hidePopup; overlay.onclick=hidePopup;
 
-// ---------------- Tree Setup ----------------
 const svg=document.getElementById("tree-svg");
 const group=document.getElementById("tree-group");
 let panX=0, panY=0, scale=1;
@@ -75,7 +79,6 @@ function updateTransform(){
   group.setAttribute("transform",`translate(${panX},${panY}) scale(${scale})`);
 }
 
-// Smooth cursor-centered zoom
 svg.addEventListener("wheel", e=>{
   if(popup.style.display==="block") return;
   e.preventDefault();
@@ -90,7 +93,6 @@ svg.addEventListener("wheel", e=>{
   updateTransform();
 });
 
-// Drag
 svg.addEventListener("mousedown", e=>{
   if(popup.style.display==="block") return;
   dragging=true;
@@ -105,21 +107,19 @@ window.addEventListener("mouseup", ()=>{
   dragging=false; svg.style.cursor="grab";
 });
 
-// ---------------- Load JSON ----------------
 async function loadTree(){
   try{
-    const res=await fetch("languages.json");
+    const res=await fetch("./languages.json");  // IMPORTANT: use ./ to ensure same folder
     const data=await res.json();
     buildTree(data);
     showPopup("Welcome to the Language Tree",
-      "This tree shows global language families. Click a group to see details, and zoom or drag to explore!");
+      "This tree shows global language families. Click a group to learn more. Drag to move, scroll to zoom.");
   }catch(err){
-    console.error("Error loading JSON:",err);
-    showPopup("Error","Could not load languages.json. Make sure it exists!");
+    console.error(err);
+    showPopup("Error","Couldn't load languages.json. Make sure it’s in the same folder as index.html!");
   }
 }
 
-// ---------------- Draw Tree ----------------
 function buildTree(data){
   group.innerHTML="";
   const nodes=[];
@@ -138,14 +138,10 @@ function buildTree(data){
     }
   }
 
-  // layout start positions
-  let startX=0;
-  const spacing=400;
   data.forEach((root,i)=>{
-    traverse(root, startX+i*spacing, 50, 0, null);
+    traverse(root, (i*400)-200, 50, 0, null);
   });
 
-  // Draw links
   links.forEach(l=>{
     const path=document.createElementNS("http://www.w3.org/2000/svg","path");
     const mx=(l.x1+l.x2)/2;
@@ -154,7 +150,6 @@ function buildTree(data){
     group.appendChild(path);
   });
 
-  // Draw nodes
   nodes.forEach(n=>{
     const g=document.createElementNS("http://www.w3.org/2000/svg","g");
     g.setAttribute("class","node");
