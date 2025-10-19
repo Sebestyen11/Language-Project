@@ -67,7 +67,7 @@ const searchDropdown = document.getElementById('searchDropdown');
 
 let panX=0, panY=0, scale=1;
 let dragging=false, startX=0, startY=0;
-let lastTouchDist=null;
+let lastTouchDist=null, initialScale=1, initialPan={x:0,y:0};
 let allNodes=[];
 
 function applyTransform(){ group.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`); }
@@ -76,7 +76,7 @@ function hidePopup(){ popup.style.display='none'; overlay.style.display='none'; 
 closePopup.addEventListener('click', hidePopup);
 overlay.addEventListener('click', hidePopup);
 
-// ---------------- Zoom ----------------
+// ---------------- Zoom (desktop) ----------------
 svg.addEventListener('wheel', e=>{
   if(popup.style.display==='block') return;
   e.preventDefault();
@@ -96,31 +96,51 @@ svg.addEventListener('mousedown', e=>{ if(popup.style.display==='block') return;
 window.addEventListener('mousemove', e=>{ if(!dragging) return; panX=e.clientX-startX; panY=e.clientY-startY; applyTransform(); });
 window.addEventListener('mouseup', ()=>{ dragging=false; svg.style.cursor='grab'; });
 
-// ---------------- Touch ----------------
+// ---------------- Touch (smooth pinch zoom) ----------------
 svg.addEventListener('touchstart', e=>{
-  if(popup.style.display==='block') return;
   if(e.touches.length===1){ dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY; }
-  else if(e.touches.length===2){ lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
+  else if(e.touches.length===2){
+    lastTouchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    initialScale = scale;
+    initialPan = {x: panX, y: panY};
+  }
 });
 svg.addEventListener('touchmove', e=>{
-  if(popup.style.display==='block') return;
-  e.preventDefault();
   if(e.touches.length===1 && dragging){ panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY; applyTransform(); }
   else if(e.touches.length===2 && lastTouchDist){
+    e.preventDefault();
     const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    const factor = 1 + (dist-lastTouchDist)/lastTouchDist*0.6;
+    const factor = dist / lastTouchDist;
+    scale = Math.min(3, Math.max(0.5, initialScale * factor));
     const mid = {x:(e.touches[0].clientX+e.touches[1].clientX)/2, y:(e.touches[0].clientY+e.touches[1].clientY)/2};
-    panX -= (mid.x-panX)*(factor-1); panY -= (mid.y-panY)*(factor-1);
-    scale*=factor; scale=Math.max(0.5,Math.min(scale,3)); applyTransform(); lastTouchDist=dist;
+    panX = mid.x - (mid.x - initialPan.x) * (scale / initialScale);
+    panY = mid.y - (mid.y - initialPan.y) * (scale / initialScale);
+    applyTransform();
   }
-},{passive:false});
+});
 svg.addEventListener('touchend', e=>{ if(e.touches.length<2) lastTouchDist=null; if(e.touches.length===0) dragging=false; });
 
-// ---------------- Layout ----------------
+// ---------------- Tree Layout ----------------
 function computeLeafCounts(node){ if(!node.children||node.children.length===0){ node._leafCount=1; return 1;} let sum=0; node.children.forEach(c=>sum+=computeLeafCounts(c)); node._leafCount=sum; return sum;}
-function assignPositions(node, depth, xOffsetRef){ const levelY=40+depth*LEVEL_V_GAP; if(!node.children||node.children.length===0){ const x=xOffsetRef.value+BOX_W/2; node._x=x; node._y=levelY; xOffsetRef.value+=BOX_W+LEAF_H_SPACING; } else{ node.children.forEach(c=>assignPositions(c,depth+1,xOffsetRef)); const first=node.children[0], last=node.children[node.children.length-1]; node._x=(first._x+last._x)/2; node._y=levelY;}}
+function assignPositions(node, depth, xOffsetRef){ const levelY=40+depth*120; if(!node.children||node.children.length===0){ const x=xOffsetRef.value+BOX_W/2; node._x=x; node._y=levelY; xOffsetRef.value+=BOX_W+24; } else{ node.children.forEach(c=>assignPositions(c,depth+1,xOffsetRef)); const first=node.children[0], last=node.children[node.children.length-1]; node._x=(first._x+last._x)/2; node._y=levelY;}}
 function drawConnector(px,py,cx,cy){ const parentBottomY=py+BOX_H/2; const childTopY=cy-BOX_H/2; const midY=(parentBottomY+childTopY)/2; const d=`M ${px} ${parentBottomY} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${childTopY}`; const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d); path.setAttribute('class','link'); return path;}
-function buildTree(data){ data.forEach(root=>computeLeafCounts(root)); const xOffsetRef={value:40}; data.forEach(root=>assignPositions(root,0,xOffsetRef)); group.innerHTML=''; allNodes=[]; const nodes=[]; function collect(node){ nodes.push(node); allNodes.push(node); if(node.children) node.children.forEach(c=>collect(c)); } data.forEach(root=>collect(root)); nodes.forEach(n=>{ if(n.children) n.children.forEach(c=>group.appendChild(drawConnector(n._x,n._y,c._x,c._y))); }); nodes.forEach(n=>{ const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n._x},${n._y})`); const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2); rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H); const text=document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name; g.appendChild(rect); g.appendChild(text); g.addEventListener('click', e=>{ e.stopPropagation(); showPopup(n.name,n.info||'No information available.') }); group.appendChild(g); }); const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs); const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth; panX=(svgW-treeWidth)/2 - minX + BOX_W/2; panY=20; scale=1; applyTransform();}
+function buildTree(data){
+  data.forEach(root=>computeLeafCounts(root));
+  const xOffsetRef={value:40}; data.forEach(root=>assignPositions(root,0,xOffsetRef));
+  group.innerHTML=''; allNodes=[]; const nodes=[];
+  function collect(node){ nodes.push(node); allNodes.push(node); if(node.children) node.children.forEach(c=>collect(c)); } data.forEach(root=>collect(root));
+  nodes.forEach(n=>{ if(n.children) n.children.forEach(c=>group.appendChild(drawConnector(n._x,n._y,c._x,c._y))); });
+  nodes.forEach(n=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n._x},${n._y})`);
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect'); rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2); rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
+    const text=document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
+    g.appendChild(rect); g.appendChild(text);
+    g.addEventListener('click', e=>{ e.stopPropagation(); showPopup(n.name,n.info||'No information available.') });
+    group.appendChild(g);
+  });
+  const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs); const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth;
+  panX=(svgW-treeWidth)/2 - minX + BOX_W/2; panY=20; scale=1; applyTransform();
+}
 
 // ---------------- Load JSON ----------------
 async function loadAndRender(){ try{ const resp=await fetch('./languages.json'); if(!resp.ok) throw new Error('HTTP '+resp.status); const data=await resp.json(); buildTree(data); showPopup('Welcome to the Language Tree','This site shows language families top→down. Click a box to view details. Drag to pan, scroll to zoom.'); }catch(err){ console.error('Failed to load languages.json',err); showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.'); } }
@@ -142,12 +162,16 @@ searchBox.addEventListener('input', ()=>{
     div.addEventListener('click', ()=>{
       const nodeG = [...document.querySelectorAll('.node')].find(g=>g.querySelector('text').textContent===n.name);
       if(nodeG){
-        const transform = nodeG.getCTM();
-        const targetX = transform.e; const targetY = transform.f;
+        const bbox = nodeG.getBBox();
+        const nodeCenterX = bbox.x + bbox.width/2;
+        const nodeCenterY = bbox.y + bbox.height/2;
         const svgRect = svg.getBoundingClientRect();
-        const centerX = svgRect.width/2; const centerY = svgRect.height/2;
-        panX = centerX - targetX*scale; panY = centerY - targetY*scale;
-        scale = Math.min(2, Math.max(0.8, scale)); applyTransform();
+        const centerX = svgRect.width/2;
+        const centerY = svgRect.height/2;
+        panX = centerX - nodeCenterX*scale;
+        panY = centerY - nodeCenterY*scale;
+        scale = Math.min(2, Math.max(0.8, scale));
+        applyTransform();
       }
       searchDropdown.style.display='none'; searchBox.value='';
     });
