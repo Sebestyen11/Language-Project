@@ -154,7 +154,6 @@ svg.addEventListener("wheel", e=>{
   const cx=e.clientX-rect.left;
   const cy=e.clientY-rect.top;
   const factor=e.deltaY<0?1.1:0.9;
-  // Adjust pan to keep zoom centered on cursor
   panX -= (cx-panX)*(factor-1);
   panY -= (cy-panY)*(factor-1);
   scale*=factor;
@@ -167,8 +166,16 @@ svg.addEventListener("mousedown", e=>{
   if(popup.style.display==="block") return;
   dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor="grabbing";
 });
-window.addEventListener("mousemove", e=>{if(dragging){panX=e.clientX-startX; panY=e.clientY-startY; updateTransform();}});
-window.addEventListener("mouseup", ()=>{dragging=false; svg.style.cursor="grab";});
+window.addEventListener("mousemove", e=>{
+  if(dragging){
+    panX=e.clientX-startX;
+    panY=e.clientY-startY;
+    updateTransform();
+  }
+});
+window.addEventListener("mouseup", ()=>{
+  dragging=false; svg.style.cursor="grab";
+});
 
 // Touch pan and pinch zoom
 let lastTouchDist=null, lastTouchMidX=0, lastTouchMidY=0;
