@@ -164,8 +164,11 @@ function layout(data) {
     }
   }
 
+  // Center top-level families
+  const totalWidth = (data.length - 1) * topOffset;
   data.forEach((root, i) => {
-    traverse(root, width/2 + (i - 0.5) * topOffset, 50);
+    const offset = (i - (data.length-1)/2) * topOffset; // centers horizontally
+    traverse(root, width/2 + offset, 50);
   });
 
   return { nodes, links };
@@ -176,29 +179,29 @@ function draw() {
   const { nodes, links } = layout(data);
 
   links.forEach(l => {
-    const midY = (l.y1 + l.y2) / 2;
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const midY = (l.y1 + l.y2)/2;
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     path.setAttribute("d", `M${l.x1},${l.y1} L${l.x1},${midY} L${l.x2},${midY} L${l.x2},${l.y2}`);
-    path.setAttribute("class", "link");
+    path.setAttribute("class","link");
     group.appendChild(path);
   });
 
   nodes.forEach(n => {
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g.setAttribute("class", "node");
+    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","node");
     g.setAttribute("transform", `translate(${n.x},${n.y})`);
     g.dataset.name = n.name;
     g.dataset.info = n.info;
 
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
     rect.setAttribute("x", -60);
     rect.setAttribute("y", -20);
     rect.setAttribute("width", 120);
     rect.setAttribute("height", 40);
 
-    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("text-anchor", "middle");
-    text.setAttribute("dy", "5");
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    text.setAttribute("text-anchor","middle");
+    text.setAttribute("dy","5");
     text.textContent = n.name;
 
     g.appendChild(rect);
@@ -213,7 +216,7 @@ draw();
 const popup = document.getElementById("popup");
 const overlay = document.querySelector(".overlay");
 svg.addEventListener("click", e => {
-  if (e.target.parentNode.classList.contains("node")) {
+  if(e.target.parentNode.classList.contains("node")){
     const g = e.target.parentNode;
     document.getElementById("popupTitle").textContent = g.dataset.name;
     document.getElementById("popupInfo").textContent = g.dataset.info;
@@ -222,34 +225,23 @@ svg.addEventListener("click", e => {
   }
 });
 
-document.getElementById("closePopup").onclick = () => {
-  popup.style.display = "none";
-  overlay.style.display = "none";
-};
-overlay.onclick = () => {
-  popup.style.display = "none";
-  overlay.style.display = "none";
-};
+document.getElementById("closePopup").onclick = () => { popup.style.display="none"; overlay.style.display="none"; };
+overlay.onclick = () => { popup.style.display="none"; overlay.style.display="none"; };
 
 // Intro popup
 const intro = document.getElementById("introPopup");
-document.getElementById("closeIntro").onclick = () => {
-  intro.style.display = "none";
-};
+document.getElementById("closeIntro").onclick = () => { intro.style.display="none"; };
 
 // ------------------ ZOOM ONLY ------------------
 let scale = 1;
-
-function updateTransform() {
-  // Keep tree centered, restrict zoom
-  scale = Math.max(0.5, Math.min(scale, 2));
-  group.setAttribute("transform", `translate(${width/2},0) scale(${scale})`);
+function updateTransform(){
+  scale = Math.max(0.5, Math.min(scale,2));
+  group.setAttribute("transform", `translate(0,0) scale(${scale})`);
 }
 
-svg.addEventListener("wheel", e => {
+svg.addEventListener("wheel", e=>{
   e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.1 : 0.9;
-  scale *= factor;
+  scale *= e.deltaY<0? 1.1 : 0.9;
   updateTransform();
 });
 
