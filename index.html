@@ -15,18 +15,17 @@
   }
   html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Arial,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));-webkit-font-smoothing:antialiased;}
   #tree-container{width:100vw;height:100vh;touch-action:none;cursor:grab;overflow:hidden}
-  svg{width:100%;height:100%;display:block}
+  svg{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
   #tree-group{transition: transform 0.08s linear;}
-  .node rect{fill:var(--box);stroke:var(--accent);stroke-width:2;rx:8;ry:8;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.12));}
+  .node rect{fill:var(--box);stroke:var(--accent);stroke-width:2;rx:8;ry:8;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.12));user-select:none;}
   .node:hover rect{fill:#f0fbff; stroke:var(--accent-dark); transform:scale(1.02);}
-  .node text{font-size:13px;pointer-events:none;fill:#111;font-weight:600}
+  .node text{font-size:13px;pointer-events:none;fill:#111;font-weight:600;user-select:none;}
   .link{stroke:var(--muted);stroke-width:2; fill:none}
   .popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:420px;z-index:1002;display:none}
   .popup h2{margin:0 0 8px 0;color:var(--accent-dark);font-size:18px}
   .popup p{margin:0;color:#333}
   .popup .close{position:absolute;right:12px;top:8px;font-size:20px;color:var(--accent-dark);cursor:pointer}
   .overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);z-index:1001;display:none}
-  /* small screens: slightly smaller boxes/text */
   @media (max-width:480px){
     .node text{font-size:12px}
   }
@@ -49,14 +48,12 @@
 </div>
 
 <script>
-/* ---------------- Configuration ---------------- */
-const BOX_W = 140;           // node box width
-const BOX_H = 44;            // node box height
-const LEVEL_V_GAP = 120;     // vertical distance between levels
-const LEAF_H_SPACING = 24;   // minimum horizontal spacing between leaves
-const SUBTREE_H_SPACING = 30;// extra spacing between sibling subtrees
+const BOX_W = 140;           
+const BOX_H = 44;            
+const LEVEL_V_GAP = 120;     
+const LEAF_H_SPACING = 24;   
+const SUBTREE_H_SPACING = 30;
 
-/* ---------------- DOM ---------------- */
 const svg = document.getElementById('tree-svg');
 const group = document.getElementById('tree-group');
 const overlay = document.getElementById('overlay');
@@ -65,7 +62,6 @@ const popupTitle = document.getElementById('popupTitle');
 const popupInfo = document.getElementById('popupInfo');
 const closePopup = document.getElementById('closePopup');
 
-/* ---------------- Popup helpers ---------------- */
 function showPopup(title, info){
   popupTitle.textContent = title || 'No title';
   popupInfo.textContent = info || 'No information available.';
@@ -79,26 +75,24 @@ function hidePopup(){
 closePopup.addEventListener('click', hidePopup);
 overlay.addEventListener('click', hidePopup);
 
-/* ---------------- Transform (pan/zoom) ---------------- */
 let panX = 0, panY = 0, scale = 1;
 let dragging = false, startX = 0, startY = 0;
 function applyTransform(){ group.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`); }
 
-/* wheel zoom (cursor-centered), solid drag */
-svg.addEventListener('wheel', e=>{
+svg.addEventListener('wheel', e => {
   if (popup.style.display === 'block') return;
   e.preventDefault();
   const rect = svg.getBoundingClientRect();
   const cx = e.clientX - rect.left;
   const cy = e.clientY - rect.top;
-  // smaller smoother steps
-  const factor = e.deltaY < 0 ? 1.05 : 0.95;
-  panX -= (cx - panX) * (factor - 1);
-  panY -= (cy - panY) * (factor - 1);
-  scale *= factor;
-  scale = Math.max(0.4, Math.min(scale, 6));
+  const zoomFactor = e.deltaY < 0 ? 1.03 : 0.97;
+  const newScale = scale * zoomFactor;
+  if (newScale < 0.5 || newScale > 3) return;
+  panX = cx - (cx - panX) * (newScale / scale);
+  panY = cy - (cy - panY) * (newScale / scale);
+  scale = newScale;
   applyTransform();
-}, { passive:false });
+}, { passive: false });
 
 svg.addEventListener('mousedown', e=>{
   if (popup.style.display === 'block') return;
@@ -118,7 +112,6 @@ window.addEventListener('mouseup', ()=>{
   svg.style.cursor = 'grab';
 });
 
-/* touch: pan + pinch (midpoint-centered) */
 let lastTouchDist = null;
 let lastTouchMid = null;
 svg.addEventListener('touchstart', e=>{
@@ -133,8 +126,8 @@ svg.addEventListener('touchstart', e=>{
       e.touches[0].clientY - e.touches[1].clientY
     );
     lastTouchMid = {
-      x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-      y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+      x: (e.touches[0].clientX + e.touches[1].clientX)/2,
+      y: (e.touches[0].clientY + e.touches[1].clientY)/2
     };
   }
 });
@@ -151,11 +144,10 @@ svg.addEventListener('touchmove', e=>{
       e.touches[0].clientY - e.touches[1].clientY
     );
     const factor = dist / lastTouchDist;
-    // zoom toward midpoint
     panX -= (lastTouchMid.x - panX) * (factor - 1);
     panY -= (lastTouchMid.y - panY) * (factor - 1);
     scale *= factor;
-    scale = Math.max(0.4, Math.min(scale, 6));
+    scale = Math.max(0.5, Math.min(scale, 3));
     applyTransform();
     lastTouchDist = dist;
   }
@@ -165,151 +157,80 @@ svg.addEventListener('touchend', e=>{
   if (e.touches.length === 0) dragging = false;
 });
 
-/* ---------------- Layout algorithm (top-down neat) ----------------
-   We compute each node's subtree width (based on leaf count), then
-   assign X positions so siblings don't overlap and children are centered
-   under their parent.
---------------------------------------------------------------- */
-
-/* compute leaves count for subtree */
 function computeLeafCounts(node){
   if (!node.children || node.children.length === 0){
-    node._leafCount = 1;
-    return 1;
+    node._leafCount = 1; return 1;
   }
   let sum = 0;
-  node.children.forEach(child => { sum += computeLeafCounts(child); });
-  node._leafCount = sum;
-  return sum;
+  node.children.forEach(c => sum += computeLeafCounts(c));
+  node._leafCount = sum; return sum;
 }
 
-/* assign positions recursively: x = cumulative offset + half subtree width */
 function assignPositions(node, depth, xOffsetRef){
   const levelY = 40 + depth * LEVEL_V_GAP;
   if (!node.children || node.children.length === 0){
     const x = xOffsetRef.value + (BOX_W/2);
-    node._x = x;
-    node._y = levelY;
+    node._x = x; node._y = levelY;
     xOffsetRef.value += BOX_W + LEAF_H_SPACING;
   } else {
-    // position children first
-    node.children.forEach(child => assignPositions(child, depth + 1, xOffsetRef));
-    // center this node above its children
-    const firstChild = node.children[0];
-    const lastChild = node.children[node.children.length - 1];
-    node._x = (firstChild._x + lastChild._x) / 2;
-    node._y = levelY;
+    node.children.forEach(c => assignPositions(c, depth+1, xOffsetRef));
+    const first = node.children[0], last = node.children[node.children.length-1];
+    node._x = (first._x + last._x)/2; node._y = levelY;
   }
 }
 
-/* generate straight T-shaped connectors from parent to child */
-function drawConnector(parentX, parentY, childX, childY){
-  // parent bottom
-  const parentBottomY = parentY + BOX_H/2;
-  const childTopY = childY - BOX_H/2;
-  const midY = (parentBottomY + childTopY) / 2;
-  // path: down from parentBottomY, horizontal to childX, down to childTopY
-  const d = `M ${parentX} ${parentBottomY} L ${parentX} ${midY} L ${childX} ${midY} L ${childX} ${childTopY}`;
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+function drawConnector(px,py,cx,cy){
+  const parentBottomY = py + BOX_H/2;
+  const childTopY = cy - BOX_H/2;
+  const midY = (parentBottomY + childTopY)/2;
+  const d = `M ${px} ${parentBottomY} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${childTopY}`;
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
   path.setAttribute('d', d);
-  path.setAttribute('class', 'link');
+  path.setAttribute('class','link');
   return path;
 }
 
-/* build and render tree from JSON data (root array) */
 function buildTree(data){
-  // compute leaf counts and positions
   data.forEach(root => computeLeafCounts(root));
-  // compute positions: traverse roots left-to-right with an xOffset
-  const xOffsetRef = { value: 40 }; // left margin
-  data.forEach(root => {
-    assignPositions(root, 0, xOffsetRef);
-  });
-
-  // clear existing
+  const xOffsetRef = { value: 40 };
+  data.forEach(root => assignPositions(root,0,xOffsetRef));
   group.innerHTML = '';
-
-  // collect nodes and links
   const nodes = [];
-  function collect(node){
-    nodes.push(node);
-    if (node.children) node.children.forEach(child => collect(child));
-  }
+  function collect(node){ nodes.push(node); if(node.children) node.children.forEach(c=>collect(c)); }
   data.forEach(root => collect(root));
-
-  // draw connectors (parent→child)
-  nodes.forEach(node => {
-    if (!node.children) return;
-    node.children.forEach(child => {
-      const parentX = node._x;
-      const parentY = node._y;
-      const childX = child._x;
-      const childY = child._y;
-      group.appendChild(drawConnector(parentX, parentY, childX, childY));
-    });
-  });
-
-  // draw node boxes (on top of connectors)
-  nodes.forEach(node => {
+  nodes.forEach(n=>{ if(n.children) n.children.forEach(c=>group.appendChild(drawConnector(n._x,n._y,c._x,c._y))); });
+  nodes.forEach(n=>{
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('class','node');
-    g.setAttribute('transform', `translate(${node._x},${node._y})`);
-    // rect centered on x,y
+    g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n._x},${n._y})`);
     const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    rect.setAttribute('x', -BOX_W/2);
-    rect.setAttribute('y', -BOX_H/2);
-    rect.setAttribute('width', BOX_W);
-    rect.setAttribute('height', BOX_H);
+    rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2); rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
     const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-    text.setAttribute('text-anchor','middle');
-    text.setAttribute('dy','6'); // vertical centering tweak
-    text.textContent = node.name;
-    g.appendChild(rect);
-    g.appendChild(text);
-    // click opens popup
-    g.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      showPopup(node.name, node.info || 'No information available.');
-    });
+    text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent = n.name;
+    g.appendChild(rect); g.appendChild(text);
+    g.addEventListener('click', e=>{ e.stopPropagation(); showPopup(n.name,n.info||'No information available.') });
     group.appendChild(g);
   });
-
-  // center initial view: set pan so tree roughly centered horizontally
-  // compute bounding box of nodes:
-  const xs = nodes.map(n => n._x);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const treeWidth = maxX - minX + BOX_W;
-  const svgW = window.innerWidth;
-  // center: panX so that group origin (0,0) placed in view center while considering group translation uses same coords:
-  panX = (svgW - treeWidth) / 2 - minX + BOX_W/2;
-  panY = 20; // small top margin
-  scale = 1;
-  applyTransform();
+  const xs = nodes.map(n=>n._x);
+  const minX = Math.min(...xs); const maxX = Math.max(...xs);
+  const treeWidth = maxX - minX + BOX_W; const svgW = window.innerWidth;
+  panX = (svgW - treeWidth)/2 - minX + BOX_W/2; panY = 20; scale = 1; applyTransform();
 }
 
-/* ---------------- Load JSON and initialize ---------------- */
 async function loadAndRender(){
   try{
     const resp = await fetch('./languages.json');
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     buildTree(data);
-    // show intro popup once
     showPopup('Welcome to the Language Tree', 'This site shows language families top→down. Click a box to view details. Drag to pan, scroll to zoom.');
   }catch(err){
     console.error('Failed to load languages.json', err);
     showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.');
   }
 }
-
-/* load on start and re-render on window resize (keeps spacing neat) */
 loadAndRender();
 window.addEventListener('resize', ()=>{ loadAndRender(); });
-
-/* close popup if background clicked (handled by overlay listener) and close on ESC */
-window.addEventListener('keydown', e=>{ if (e.key === 'Escape') hidePopup(); });
-
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') hidePopup(); });
 </script>
 </body>
 </html>
