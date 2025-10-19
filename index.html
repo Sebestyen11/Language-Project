@@ -9,11 +9,13 @@
     background: linear-gradient(135deg, #f3f7fa, #e0ebf5);
     font-family: "Segoe UI", Arial, sans-serif;
     overflow: hidden;
+    user-select: none; /* Prevent text selection while dragging */
   }
 
   #tree-container {
     width: 100vw;
     height: 100vh;
+    cursor: grab;
   }
 
   svg {
@@ -96,7 +98,7 @@
 <div class="popup intro" id="introPopup">
   <span class="close" id="closeIntro">&times;</span>
   <h2>Welcome to the World Language Tree</h2>
-  <p>This is an interactive exploration of major language families. Zoom in with the mouse wheel and click a language or branch to learn more.</p>
+  <p>This is an interactive exploration of major language families. Drag, zoom, and click a language or branch to learn more.</p>
 </div>
 
 <script>
@@ -143,7 +145,7 @@ const dx = 250;
 const dy = 150;
 const topOffset = 700;
 
-// Layout
+// ------------------ TREE LAYOUT ------------------
 function layout(data) {
   let nodes = [];
   let links = [];
@@ -164,16 +166,15 @@ function layout(data) {
     }
   }
 
-  // Center top-level families
-  const totalWidth = (data.length - 1) * topOffset;
   data.forEach((root, i) => {
-    const offset = (i - (data.length-1)/2) * topOffset; // centers horizontally
+    const offset = (i - (data.length-1)/2) * topOffset;
     traverse(root, width/2 + offset, 50);
   });
 
   return { nodes, links };
 }
 
+// ------------------ DRAW TREE ------------------
 function draw() {
   group.innerHTML = "";
   const { nodes, links } = layout(data);
@@ -215,6 +216,7 @@ draw();
 // ------------------ POPUPS ------------------
 const popup = document.getElementById("popup");
 const overlay = document.querySelector(".overlay");
+
 svg.addEventListener("click", e => {
   if(e.target.parentNode.classList.contains("node")){
     const g = e.target.parentNode;
@@ -228,21 +230,46 @@ svg.addEventListener("click", e => {
 document.getElementById("closePopup").onclick = () => { popup.style.display="none"; overlay.style.display="none"; };
 overlay.onclick = () => { popup.style.display="none"; overlay.style.display="none"; };
 
-// Intro popup
 const intro = document.getElementById("introPopup");
 document.getElementById("closeIntro").onclick = () => { intro.style.display="none"; };
 
-// ------------------ ZOOM ONLY ------------------
+// ------------------ ZOOM & DRAG ------------------
 let scale = 1;
-function updateTransform(){
-  scale = Math.max(0.5, Math.min(scale,2));
-  group.setAttribute("transform", `translate(0,0) scale(${scale})`);
+let panX = 0, panY = 0;
+let dragging = false;
+let startX, startY;
+
+function updateTransform() {
+  group.setAttribute("transform", `translate(${panX},${panY}) scale(${scale})`);
 }
 
+// Zoom
 svg.addEventListener("wheel", e=>{
   e.preventDefault();
-  scale *= e.deltaY<0? 1.1 : 0.9;
+  const factor = e.deltaY<0? 1.1 : 0.9;
+  scale *= factor;
+  scale = Math.max(0.5, Math.min(scale, 2));
   updateTransform();
+});
+
+// Drag
+svg.addEventListener("mousedown", e=>{
+  dragging = true;
+  startX = e.clientX - panX;
+  startY = e.clientY - panY;
+  svg.style.cursor = "grabbing";
+});
+
+window.addEventListener("mousemove", e=>{
+  if(!dragging) return;
+  panX = e.clientX - startX;
+  panY = e.clientY - startY;
+  updateTransform();
+});
+
+window.addEventListener("mouseup", ()=>{
+  dragging = false;
+  svg.style.cursor = "grab";
 });
 
 updateTransform();
