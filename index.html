@@ -54,7 +54,12 @@ svg{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:no
 </div>
 
 <script>
-const BOX_W = 140, BOX_H = 44;
+/* ---------- Config ---------- */
+const BOX_W = 140;
+const BOX_H = 44;
+const LEVEL_V_GAP = 120;
+const LEAF_H_SPACING = 24;
+
 const svg = document.getElementById('tree-svg');
 const group = document.getElementById('tree-group');
 const overlay = document.getElementById('overlay');
@@ -65,113 +70,275 @@ const closePopup = document.getElementById('closePopup');
 const searchBox = document.getElementById('searchBox');
 const searchDropdown = document.getElementById('searchDropdown');
 
-let panX=0, panY=0, scale=1;
-let dragging=false, startX=0, startY=0;
-let lastTouchDist=null, initialScale=1, initialPan={x:0,y:0};
-let allNodes=[];
+let panX = 0, panY = 0, scale = 1;
+let dragging = false, startX = 0, startY = 0;
+let lastTouchDist = null, initialScale = 1, initialPan = {x:0,y:0};
+let allNodes = [];
 
-function applyTransform(){ group.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`); }
-function showPopup(title, info){ popupTitle.textContent=title||'No title'; popupInfo.textContent=info||'No information'; popup.style.display='block'; overlay.style.display='block'; }
-function hidePopup(){ popup.style.display='none'; overlay.style.display='none'; }
+/* ---------- Helpers ---------- */
+function applyTransform(){
+  group.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`);
+}
+function showPopup(title, info){
+  popupTitle.textContent = title || 'No title';
+  popupInfo.textContent = info || 'No information';
+  popup.style.display = 'block';
+  overlay.style.display = 'block';
+}
+function hidePopup(){
+  popup.style.display = 'none';
+  overlay.style.display = 'none';
+}
 closePopup.addEventListener('click', hidePopup);
 overlay.addEventListener('click', hidePopup);
 
-// ---------- Zoom ----------
+/* ---------- Zoom (desktop) ---------- */
 svg.addEventListener('wheel', e=>{
   e.preventDefault();
   const rect = svg.getBoundingClientRect();
   const cx = e.clientX - rect.left;
   const cy = e.clientY - rect.top;
-  const zoomFactor = e.deltaY<0?1.06:0.94;
-  const newScale = scale*zoomFactor;
-  if(newScale<0.5||newScale>3) return;
-  panX = cx - (cx-panX)*(newScale/scale);
-  panY = cy - (cy-panY)*(newScale/scale);
-  scale=newScale; applyTransform();
-},{passive:false});
+  const zoomFactor = e.deltaY < 0 ? 1.06 : 0.94; // tweak to change speed
+  const newScale = scale * zoomFactor;
+  if (newScale < 0.5 || newScale > 3) return;
+  panX = cx - (cx - panX) * (newScale / scale);
+  panY = cy - (cy - panY) * (newScale / scale);
+  scale = newScale;
+  applyTransform();
+}, { passive: false });
 
-// ---------- Drag ----------
-svg.addEventListener('mousedown', e=>{ dragging=true; startX=e.clientX-panX; startY=e.clientY-panY; svg.style.cursor='grabbing'; });
-window.addEventListener('mousemove', e=>{ if(!dragging) return; panX=e.clientX-startX; panY=e.clientY-startY; applyTransform(); });
-window.addEventListener('mouseup', ()=>{ dragging=false; svg.style.cursor='grab'; });
+/* ---------- Drag (mouse) ---------- */
+svg.addEventListener('mousedown', e=>{
+  dragging = true;
+  startX = e.clientX - panX;
+  startY = e.clientY - panY;
+  svg.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e=>{
+  if (!dragging) return;
+  panX = e.clientX - startX;
+  panY = e.clientY - startY;
+  applyTransform();
+});
+window.addEventListener('mouseup', ()=>{
+  dragging = false;
+  svg.style.cursor = 'grab';
+});
 
-// ---------- Touch ----------
+/* ---------- Touch: pan + smooth pinch ---------- */
 svg.addEventListener('touchstart', e=>{
-  if(e.touches.length===1){ dragging=true; startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY; }
-  else if(e.touches.length===2){
-    lastTouchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  if (e.touches.length === 1){
+    dragging = true;
+    startX = e.touches[0].clientX - panX;
+    startY = e.touches[0].clientY - panY;
+  } else if (e.touches.length === 2){
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
     initialScale = scale;
-    initialPan = {x: panX, y: panY};
+    initialPan = { x: panX, y: panY };
   }
 });
 svg.addEventListener('touchmove', e=>{
-  if(e.touches.length===1 && dragging){ panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY; applyTransform(); }
-  else if(e.touches.length===2 && lastTouchDist){
+  if (e.touches.length === 1 && dragging){
+    panX = e.touches[0].clientX - startX;
+    panY = e.touches[0].clientY - startY;
+    applyTransform();
+  } else if (e.touches.length === 2 && lastTouchDist){
     e.preventDefault();
-    const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
     const factor = dist / lastTouchDist;
     const newScale = Math.min(3, Math.max(0.5, initialScale * factor));
+
     const rect = svg.getBoundingClientRect();
-    const midX = (e.touches[0].clientX+e.touches[1].clientX)/2 - rect.left;
-    const midY = (e.touches[0].clientY+e.touches[1].clientY)/2 - rect.top;
-    panX = midX - (midX - initialPan.x) * (newScale/initialScale);
-    panY = midY - (midY - initialPan.y) * (newScale/initialScale);
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+    panX = midX - (midX - initialPan.x) * (newScale / initialScale);
+    panY = midY - (midY - initialPan.y) * (newScale / initialScale);
+
     scale = newScale;
     applyTransform();
   }
+}, { passive: false });
+svg.addEventListener('touchend', e=>{
+  if (e.touches.length < 2) lastTouchDist = null;
+  if (e.touches.length === 0) dragging = false;
 });
-svg.addEventListener('touchend', e=>{ if(e.touches.length<2) lastTouchDist=null; if(e.touches.length===0) dragging=false; });
 
-// ---------- Tree Layout ----------
-function computeLeafCounts(node){ if(!node.children||node.children.length===0){ node._leafCount=1; return 1;} let sum=0; node.children.forEach(c=>sum+=computeLeafCounts(c)); node._leafCount=sum; return sum;}
-function assignPositions(node, depth, xOffsetRef){ const levelY=40+depth*120; if(!node.children||node.children.length===0){ const x=xOffsetRef.value+BOX_W/2; node._x=x; node._y=levelY; xOffsetRef.value+=BOX_W+24; } else{ node.children.forEach(c=>assignPositions(c,depth+1,xOffsetRef)); const first=node.children[0], last=node.children[node.children.length-1]; node._x=(first._x+last._x)/2; node._y=levelY;}}
-function drawConnector(px,py,cx,cy){ const parentBottomY=py+BOX_H/2; const childTopY=cy-BOX_H/2; const midY=(parentBottomY+childTopY)/2; const d=`M ${px} ${parentBottomY} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${childTopY}`; const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d); path.setAttribute('class','link'); return path;}
-function buildTree(data){
-  data.forEach(root=>computeLeafCounts(root));
-  const xOffsetRef={value:40}; data.forEach(root=>assignPositions(root,0,xOffsetRef));
-  group.innerHTML=''; allNodes=[]; const nodes=[];
-  function collect(node){ nodes.push(node); allNodes.push(node); if(node.children) node.children.forEach(c=>collect(c)); } data.forEach(root=>collect(root));
-  nodes.forEach(n=>{ if(n.children) n.children.forEach(c=>group.appendChild(drawConnector(n._x,n._y,c._x,c._y))); });
-  nodes.forEach(n=>{
-    const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n._x},${n._y})`);
-    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
-    rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2);
-    rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
-    rect.setAttribute('rx',8); rect.setAttribute('ry',8);
-
-    // 🟥 Color by type
-    if(n.type==="group") rect.setAttribute('fill','#ffffff');
-    else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.1)');
-    else if(n.type==="extinct") rect.setAttribute('fill','rgba(255,0,0,0.1)');
-    else rect.setAttribute('fill','var(--box)');
-
-    rect.setAttribute('stroke','var(--accent)');
-    const text=document.createElementNS('http://www.w3.org/2000/svg','text');
-    text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
-    g.appendChild(rect); g.appendChild(text);
-    g.addEventListener('click', e=>{ e.stopPropagation(); }); // no popups
-    group.appendChild(g);
-  });
-  const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs);
-  const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth;
-  panX=(svgW-treeWidth)/2 - minX + BOX_W/2; panY=20; scale=1; applyTransform();
+/* ---------- Tree layout algorithm ---------- */
+function computeLeafCounts(node){
+  if (!node.children || node.children.length === 0){ node._leafCount = 1; return 1; }
+  let sum = 0;
+  node.children.forEach(c => sum += computeLeafCounts(c));
+  node._leafCount = sum;
+  return sum;
 }
 
-async function loadAndRender(){ 
-  try{ 
-    const resp=await fetch('./languages.json'); 
-    if(!resp.ok) throw new Error('HTTP '+resp.status); 
-    const data=await resp.json(); 
-    buildTree(data); 
-    showPopup('Welcome to the Language Tree','This site shows language families top→down. Drag to pan, scroll to zoom. Only the tree is interactive; no popups for individual languages or groups.');
-  }catch(err){ 
-    console.error('Failed to load languages.json',err); 
-    showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.'); 
-  } 
+function assignPositions(node, depth, xOffsetRef){
+  const levelY = 40 + depth * LEVEL_V_GAP;
+  if (!node.children || node.children.length === 0){
+    const x = xOffsetRef.value + (BOX_W/2);
+    node._x = x;
+    node._y = levelY;
+    xOffsetRef.value += BOX_W + LEAF_H_SPACING;
+  } else {
+    node.children.forEach(child => assignPositions(child, depth + 1, xOffsetRef));
+    const first = node.children[0];
+    const last = node.children[node.children.length - 1];
+    node._x = (first._x + last._x) / 2;
+    node._y = levelY;
+  }
+}
+
+function drawConnector(parentX, parentY, childX, childY){
+  const parentBottomY = parentY + BOX_H/2;
+  const childTopY = childY - BOX_H/2;
+  const midY = (parentBottomY + childTopY) / 2;
+  const d = `M ${parentX} ${parentBottomY} L ${parentX} ${midY} L ${childX} ${midY} L ${childX} ${childTopY}`;
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d', d);
+  path.setAttribute('class', 'link');
+  return path;
+}
+
+/* ---------- Build & render ---------- */
+function buildTree(data){
+  data.forEach(root => computeLeafCounts(root));
+  const xOffsetRef = { value: 40 };
+  data.forEach(root => assignPositions(root, 0, xOffsetRef));
+
+  group.innerHTML = '';
+  allNodes = [];
+  const nodes = [];
+
+  function collect(node){
+    nodes.push(node);
+    allNodes.push(node);
+    if (node.children) node.children.forEach(c => collect(c));
+  }
+  data.forEach(root => collect(root));
+
+  // connectors
+  nodes.forEach(node => {
+    if (!node.children) return;
+    node.children.forEach(child => {
+      group.appendChild(drawConnector(node._x, node._y, child._x, child._y));
+    });
+  });
+
+  // nodes
+  nodes.forEach(node => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','node');
+    g.setAttribute('transform', `translate(${node._x},${node._y})`);
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x', -BOX_W/2);
+    rect.setAttribute('y', -BOX_H/2);
+    rect.setAttribute('width', BOX_W);
+    rect.setAttribute('height', BOX_H);
+    rect.setAttribute('rx', 8);
+    rect.setAttribute('ry', 8);
+
+    // color by type (group: white, living: light green, extinct: light red)
+    if (node.type === "group") rect.setAttribute('fill', '#ffffff');
+    else if (node.type === "living") rect.setAttribute('fill', 'rgba(0,128,0,0.1)');
+    else if (node.type === "extinct") rect.setAttribute('fill', 'rgba(255,0,0,0.1)');
+    else rect.setAttribute('fill', 'var(--box)');
+
+    rect.setAttribute('stroke','var(--accent)');
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('dy','6');
+    text.textContent = node.name;
+
+    g.appendChild(rect);
+    g.appendChild(text);
+
+    // node click disabled (no popups)
+    g.addEventListener('click', e => { e.stopPropagation(); });
+
+    group.appendChild(g);
+  });
+
+  // initial centering
+  const xs = nodes.map(n => n._x);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const treeWidth = maxX - minX + BOX_W;
+  const svgW = window.innerWidth;
+  panX = (svgW - treeWidth) / 2 - minX + BOX_W/2;
+  panY = 20;
+  scale = 1;
+  applyTransform();
+}
+
+/* ---------- Load JSON ---------- */
+async function loadAndRender(){
+  try{
+    const resp = await fetch('./languages.json');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    buildTree(data);
+    // show only intro popup
+    showPopup(
+      'Welcome to the Language Tree',
+      'This site shows language families top→down. Drag to pan, scroll to zoom. Node popups are disabled; use search to center nodes.'
+    );
+  }catch(err){
+    console.error('Failed to load languages.json', err);
+    showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.');
+  }
 }
 loadAndRender();
 window.addEventListener('resize', ()=>{ loadAndRender(); });
-window.addEventListener('keydown', e=>{ if(e.key==='Escape') hidePopup(); });
+window.addEventListener('keydown', e=>{ if (e.key === 'Escape') hidePopup(); });
+
+/* ---------- Search autocomplete (click result to center) ---------- */
+searchBox.addEventListener('input', ()=>{
+  const q = searchBox.value.trim().toLowerCase();
+  searchDropdown.innerHTML = '';
+  if (!q){ searchDropdown.style.display = 'none'; return; }
+  const matches = allNodes.filter(n => n.name.toLowerCase().includes(q)).slice(0, 8);
+  if (matches.length === 0){ searchDropdown.style.display = 'none'; return; }
+
+  matches.forEach(n => {
+    const div = document.createElement('div');
+    div.textContent = n.name;
+    div.style.padding = '6px 8px';
+    div.style.cursor = 'pointer';
+    div.addEventListener('mouseenter', ()=>{ div.style.background = '#f0f0f0'; });
+    div.addEventListener('mouseleave', ()=>{ div.style.background = '#fff'; });
+    div.addEventListener('click', ()=>{
+      // center using layout coordinates (accounts for transforms)
+      const svgRect = svg.getBoundingClientRect();
+      const centerX = svgRect.width / 2;
+      const centerY = svgRect.height / 2;
+      panX = centerX - n._x * scale;
+      panY = centerY - n._y * scale;
+      // optionally zoom in a bit when centering
+      scale = Math.min(2, Math.max(0.8, scale));
+      applyTransform();
+      searchDropdown.style.display = 'none';
+      searchBox.value = '';
+    });
+    searchDropdown.appendChild(div);
+  });
+
+  searchDropdown.style.display = 'block';
+});
+
+document.addEventListener('click', (e)=>{
+  if (!searchBox.contains(e.target) && !searchDropdown.contains(e.target)){
+    searchDropdown.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
