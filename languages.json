@@ -10,6 +10,11 @@
           { "name": "Spanish", "type": "living" },
           { "name": "French", "type": "living" },
           { "name": "Latin", "type": "extinct" }
+           ]
+      },
+      {
+        "name": "Albanian",
+        "type": "living",
         ]
       },
       {
