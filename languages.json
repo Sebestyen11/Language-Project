@@ -1,52 +1,37 @@
 [
   {
     "name": "Indo-European",
-    "info": "One of the world's major language families.",
     "type": "group",
     "children": [
       {
         "name": "Romance",
-        "info": "Includes French, Spanish, Italian, etc.",
         "type": "group",
         "children": [
-          {"name": "French", "info": "Spoken in France and worldwide", "type": "living"},
-          {"name": "Spanish", "info": "Spoken in Spain and Latin America", "type": "living"},
-          {"name": "Italian", "info": "Spoken in Italy", "type": "living"}
+          { "name": "Spanish", "type": "living" },
+          { "name": "French", "type": "living" },
+          { "name": "Latin", "type": "extinct" }
         ]
       },
       {
         "name": "Germanic",
-        "info": "Includes English, German, Dutch, etc.",
         "type": "group",
         "children": [
-          {"name": "English", "info": "Spoken worldwide", "type": "living"},
-          {"name": "German", "info": "Spoken in Germany, Austria, Switzerland", "type": "living"},
-          {"name": "Dutch", "info": "Spoken in Netherlands and Belgium", "type": "living"}
+          { "name": "English", "type": "living" },
+          { "name": "German", "type": "living" }
         ]
       }
     ]
   },
   {
     "name": "Uralic",
-    "info": "Languages mostly spoken in Northern Eurasia.",
     "type": "group",
     "children": [
       {
         "name": "Finnic",
-        "info": "Includes Finnish, Estonian, etc.",
         "type": "group",
         "children": [
-          {"name": "Finnish", "info": "Spoken in Finland", "type": "living"},
-          {"name": "Estonian", "info": "Spoken in Estonia", "type": "living"}
-        ]
-      },
-      {
-        "name": "Ugric",
-        "info": "Includes Hungarian, Khanty, Mansi",
-        "type": "group",
-        "children": [
-          {"name": "Hungarian", "info": "Spoken in Hungary", "type": "living"},
-          {"name": "Khanty", "info": "Spoken in Russia", "type": "living"}
+          { "name": "Finnish", "type": "living" },
+          { "name": "Estonian", "type": "living" }
         ]
       }
     ]
