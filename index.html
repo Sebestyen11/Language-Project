@@ -54,7 +54,7 @@ svg{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:no
 </div>
 
 <script>
-const BOX_W = 140, BOX_H = 44, LEVEL_V_GAP = 120, LEAF_H_SPACING = 24;
+const BOX_W = 140, BOX_H = 44;
 const svg = document.getElementById('tree-svg');
 const group = document.getElementById('tree-group');
 const overlay = document.getElementById('overlay');
@@ -76,7 +76,7 @@ function hidePopup(){ popup.style.display='none'; overlay.style.display='none'; 
 closePopup.addEventListener('click', hidePopup);
 overlay.addEventListener('click', hidePopup);
 
-// ---------- Zoom (desktop) ----------
+// ---------- Zoom ----------
 svg.addEventListener('wheel', e=>{
   e.preventDefault();
   const rect = svg.getBoundingClientRect();
@@ -138,31 +138,32 @@ function buildTree(data){
     rect.setAttribute('x',-BOX_W/2); rect.setAttribute('y',-BOX_H/2);
     rect.setAttribute('width',BOX_W); rect.setAttribute('height',BOX_H);
     rect.setAttribute('rx',8); rect.setAttribute('ry',8);
-    // Color based on type
+
+    // 🟥 Color by type
     if(n.type==="group") rect.setAttribute('fill','#ffffff');
     else if(n.type==="living") rect.setAttribute('fill','rgba(0,128,0,0.1)');
+    else if(n.type==="extinct") rect.setAttribute('fill','rgba(255,0,0,0.1)');
     else rect.setAttribute('fill','var(--box)');
+
     rect.setAttribute('stroke','var(--accent)');
     const text=document.createElementNS('http://www.w3.org/2000/svg','text');
     text.setAttribute('text-anchor','middle'); text.setAttribute('dy','6'); text.textContent=n.name;
     g.appendChild(rect); g.appendChild(text);
-    // Node click disabled (no popups)
-    g.addEventListener('click', e=>{ e.stopPropagation(); });
+    g.addEventListener('click', e=>{ e.stopPropagation(); }); // no popups
     group.appendChild(g);
   });
-  const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs); const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth;
+  const xs=nodes.map(n=>n._x); const minX=Math.min(...xs); const maxX=Math.max(...xs);
+  const treeWidth=maxX-minX+BOX_W; const svgW=window.innerWidth;
   panX=(svgW-treeWidth)/2 - minX + BOX_W/2; panY=20; scale=1; applyTransform();
 }
 
-// ---------------- Load JSON ----------------
 async function loadAndRender(){ 
   try{ 
     const resp=await fetch('./languages.json'); 
     if(!resp.ok) throw new Error('HTTP '+resp.status); 
     const data=await resp.json(); 
     buildTree(data); 
-    // Intro popup only
-    showPopup('Welcome to the Tree of Languages','This site shows a diagram of languages and their genetics. You can also see what languages derived from the same ancestor. White represents a linguistic group and green represents a living language.                           Created by Sebastian G. F. Archibald');
+    showPopup('Welcome to the Language Tree','This site shows language families top→down. Drag to pan, scroll to zoom. Only the tree is interactive; no popups for individual languages or groups.');
   }catch(err){ 
     console.error('Failed to load languages.json',err); 
     showPopup('Error','Could not load languages.json — make sure the file exists next to index.html and the repo is public.'); 
@@ -171,35 +172,6 @@ async function loadAndRender(){
 loadAndRender();
 window.addEventListener('resize', ()=>{ loadAndRender(); });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') hidePopup(); });
-
-// ---------------- Search autocomplete ----------------
-searchBox.addEventListener('input', ()=>{
-  const query = searchBox.value.toLowerCase();
-  searchDropdown.innerHTML=''; if(!query){ searchDropdown.style.display='none'; return; }
-  const matches = allNodes.filter(n=>n.name.toLowerCase().includes(query)).slice(0,8);
-  if(matches.length===0){ searchDropdown.style.display='none'; return; }
-  matches.forEach(n=>{
-    const div = document.createElement('div'); div.textContent=n.name;
-    div.style.padding='4px 6px'; div.style.cursor='pointer';
-    div.addEventListener('mouseenter',()=>{ div.style.background='#f0f0f0'; });
-    div.addEventListener('mouseleave',()=>{ div.style.background='#fff'; });
-    div.addEventListener('click', ()=>{
-      const svgRect = svg.getBoundingClientRect();
-      const centerX = svgRect.width / 2;
-      const centerY = svgRect.height / 2;
-      panX = centerX - n._x*scale;
-      panY = centerY - n._y*scale;
-      scale = Math.min(2, Math.max(0.8, scale));
-      applyTransform();
-      searchDropdown.style.display='none'; searchBox.value='';
-    });
-    searchDropdown.appendChild(div);
-  });
-  searchDropdown.style.display='block';
-});
-document.addEventListener('click', (e)=>{
-  if(!searchBox.contains(e.target) && !searchDropdown.contains(e.target)){ searchDropdown.style.display='none'; }
-});
 </script>
 </body>
 </html>
