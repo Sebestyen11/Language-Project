@@ -4,39 +4,34 @@
     "type": "group",
     "children": [
       {
-        "name": "Romance",
-        "type": "group",
-        "children": [
-          { "name": "Spanish", "type": "living" },
-          { "name": "French", "type": "living" },
-          { "name": "Latin", "type": "extinct" }
-           ]
-      },
-      {
-        "name": "Albanian",
-        "type": "living",
-      },
-      {
         "name": "Germanic",
         "type": "group",
         "children": [
           { "name": "English", "type": "living" },
-          { "name": "German", "type": "living" }
+          { "name": "German", "type": "living" },
+          { "name": "Gothic", "type": "extinct" }
         ]
-      }
-    ]
-  },
-  {
-    "name": "Uralic",
-    "type": "group",
-    "children": [
+      },
       {
-        "name": "Finnic",
+        "name": "Romance",
         "type": "group",
         "children": [
-          { "name": "Finnish", "type": "living" },
-          { "name": "Estonian", "type": "living" }
+          { "name": "French", "type": "living" },
+          { "name": "Spanish", "type": "living" },
+          { "name": "Latin", "type": "extinct" }
         ]
+      },
+      {
+        "name": "Balto-Slavic",
+        "type": "group",
+        "children": [
+          { "name": "Russian", "type": "living" },
+          { "name": "Polish", "type": "living" }
+        ]
+      },
+      {
+        "name": "Albanian",
+        "type": "living"
       }
     ]
   }
