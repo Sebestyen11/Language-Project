@@ -4,34 +4,20 @@
     "type": "group",
     "children": [
       {
-        "name": "Germanic",
+        "name": "Albanoid",
         "type": "group",
         "children": [
-          { "name": "English", "type": "living" },
-          { "name": "German", "type": "living" },
-          { "name": "Gothic", "type": "extinct" }
+          {
+            "name": "Proto-Albanian",
+            "type": "group",
+            "children": [
+              {
+                "name": "Albanian",
+                "type": "living"
+              }
+            ]
+          }
         ]
-      },
-      {
-        "name": "Romance",
-        "type": "group",
-        "children": [
-          { "name": "French", "type": "living" },
-          { "name": "Spanish", "type": "living" },
-          { "name": "Latin", "type": "extinct" }
-        ]
-      },
-      {
-        "name": "Balto-Slavic",
-        "type": "group",
-        "children": [
-          { "name": "Russian", "type": "living" },
-          { "name": "Polish", "type": "living" }
-        ]
-      },
-      {
-        "name": "Albanian",
-        "type": "living"
       }
     ]
   }
