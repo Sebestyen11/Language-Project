@@ -4,20 +4,12 @@
     "type": "group",
     "children": [
       {
-        "name": "Albanoid",
-        "type": "group",
-        "children": [
-          {
-            "name": "Proto-Albanian",
-            "type": "group",
-            "children": [
-              {
-                "name": "Albanian",
-                "type": "living"
-              }
-            ]
-          }
-        ]
+        "name": "Albanian",
+        "type": "living"
+      },
+      {
+        "name": "Armenian",
+        "type": "living"
       }
     ]
   }
