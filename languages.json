@@ -4,9 +4,6 @@
     "type": "group",
     "children": [
       {
-        "name": "Proto-Albanian",
-        "type": "group",
-        "children": [
           { "name": "Albanian", "type": "living" }
         ]
       },
